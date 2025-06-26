@@ -1,231 +1,290 @@
 {% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block
 body %}
-<!-- This div now ONLY contains the intro text and button -->
-<div id="proctoring-intro">
+<style>
+  body.proctoring-active {
+    overflow: hidden;
+  }
+  #startup-info {
+    max-width: 800px;
+    margin: 50px auto;
+    text-align: center;
+    padding: 50px;
+  }
+  #proctoring-layout {
+    display: flex;
+    flex-direction: row;
+    width: 100vw;
+    height: calc(100vh - 40px);
+    position: fixed;
+    top: 40px;
+    left: 0;
+    background: white;
+  }
+  #dmoj-content-container {
+    flex-grow: 1;
+    height: 100%;
+  }
+  #dmoj-problem-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  #proctoring-sidebar {
+    width: 320px;
+    flex-shrink: 0;
+    background-color: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+    transition: all 0.3s ease-in-out;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  #proctoring-ui {
+    padding: 1em;
+  }
+  #proctoring-sidebar.collapsed {
+    width: 0;
+    padding: 0;
+    border-left: none;
+  }
+  #proctoring-sidebar.collapsed > * {
+    visibility: hidden;
+  }
+  #toggle-sidebar-btn {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%) translateX(-100%);
+    width: 25px;
+    height: 80px;
+    border: 1px solid #dee2e6;
+    border-right: none;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 0;
+    border-radius: 15px 0 0 15px;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #555;
+  }
+  #proctoring-sidebar.collapsed #toggle-sidebar-btn {
+    visibility: visible;
+    transform: translateY(-50%) translateX(0) scaleX(-1);
+    left: -25px;
+    border-right: 1px solid #dee2e6;
+    border-left: none;
+    border-radius: 0 15px 15px 0;
+  }
+</style>
+
+<div
+  id="startup-info"
+  data-problem-url="{{ url('problem_detail', problem.code) }}"
+>
   <h1>{{ title }}</h1>
   <p>
     You are about to start a proctoring session for problem:
     <strong>{{ problem.name }}</strong>.
   </p>
-  <p>
-    Please ensure you are in a quiet environment and have your webcam enabled.
-    Click the button below to grant camera permissions and begin the exam.
-  </p>
-  <button id="startBtn" class="button">Start Proctoring Session</button>
+  <p>Please click the button below to grant camera access and begin.</p>
+  <button
+    id="startBtn"
+    class="button"
+    style="padding: 15px 30px; font-size: 1.2em"
+  >
+    Start Proctoring Session
+  </button>
 </div>
 
-<!-- These elements are for the live view and are now separate -->
-<video
-  id="webcam"
-  autoplay
-  muted
-  playsinline
-  width="640"
-  height="480"
-  style="display: none"
-></video>
-<canvas id="canvas" width="320" height="240" style="display: none"></canvas>
-<div id="status" class="alert alert-info">Not Started</div>
-
-<!-- This container holds the DMOJ problem page -->
-<div
-  id="proctoring-container"
-  style="display: none; width: 100%; height: 80vh; margin-top: 20px"
->
-  <iframe
-    id="dmoj-problem-frame"
-    src="about:blank"
-    style="width: 100%; height: 100%; border: 1px solid #ccc"
-  ></iframe>
+<div id="proctoring-layout" style="display: none">
+  <div id="dmoj-content-container">
+    <iframe id="dmoj-problem-frame" src="about:blank"></iframe>
+  </div>
+  <div id="proctoring-sidebar">
+    <button id="toggle-sidebar-btn" title="Toggle Proctoring Panel">‹</button>
+    <div id="proctoring-ui">
+      <h3 style="text-align: center; margin-top: 0; margin-bottom: 15px">
+        Proctoring
+      </h3>
+      <video
+        id="webcam"
+        autoplay
+        muted
+        playsinline
+        style="width: 100%; background: black; border-radius: 5px"
+      ></video>
+      <canvas id="canvas" style="display: none"></canvas>
+      <div
+        id="status"
+        style="margin-top: 10px; font-weight: bold; text-align: center"
+      >
+        Initializing...
+      </div>
+    </div>
+  </div>
 </div>
 
-<div
-  id="session-ended-message"
-  style="display: none; text-align: center; padding: 40px"
->
-  <h1>Proctoring Session Ended</h1>
-  <p>
-    Your session has been successfully completed. You may now close this window.
-  </p>
-</div>
-
-<!-- Step 1: Define dynamic variables -->
 <script>
-  const problemUrl = "{{ url('problem_detail', problem.code) }}";
-  const API_BASE_URL = "http://127.0.0.1:8001";
-</script>
+  {%- raw -%}
+  document.addEventListener("DOMContentLoaded", function () {
+      // --- UI & Server Configuration ---
+      const API_BASE_URL = "http://127.0.0.1:8001";
+      const startBtn = document.getElementById("startBtn");
+      const startupInfo = document.getElementById("startup-info");
+      const proctoringLayout = document.getElementById("proctoring-layout");
+      const iframe = document.getElementById("dmoj-problem-frame");
+      const sidebar = document.getElementById("proctoring-sidebar");
+      const toggleBtn = document.getElementById("toggle-sidebar-btn");
+      const video = document.getElementById("webcam");
+      const canvas = document.getElementById("canvas");
+      const statusDiv = document.getElementById("status");
+      const problemUrl = startupInfo.getAttribute('data-problem-url');
 
-<!-- Step 2: Load the main script inside a 'raw' block -->
-<script>
-  {% raw %}
-  document.addEventListener('DOMContentLoaded', () => {
-      // Get references to all HTML elements
-      const proctoringIntro = document.getElementById('proctoring-intro');
-      const video = document.getElementById('webcam');
-      const canvas = document.getElementById('canvas');
-      const statusDiv = document.getElementById('status');
-      const startBtn = document.getElementById('startBtn');
-      const proctoringContainer = document.getElementById('proctoring-container');
-      const iframe = document.getElementById('dmoj-problem-frame');
-      const sessionEndedMessage = document.getElementById('session-ended-message');
-
-      let socket;
-      let mediaRecorder;
+      // --- Proctoring State & Config ---
+      let socket, mediaRecorder, analysisInterval;
       let recordedChunks = [];
       let isProctoring = false;
       let isFinalizingClip = false;
-      let analysisInterval;
-
       const ANALYSIS_INTERVAL_MS = 500;
       const PRE_VIOLATION_BUFFER_SECONDS = 10;
       const POST_VIOLATION_RECORD_SECONDS = 15;
 
+      // --- Event Listeners for UI ---
       if (startBtn) {
-          startBtn.addEventListener('click', () => {
-              if (!isProctoring) {
-                  startProctoring();
-              }
+          startBtn.addEventListener("click", () => {
+              console.log("[DEBUG] Start button clicked.");
+              if (!isProctoring) startProctoring();
           });
       }
-
-      window.addEventListener('message', (event) => {
-          if (event.origin !== "http://127.0.0.1:8000") return;
-          if (event.data.proctoringPage) console.log(`User is now on page: ${event.data.proctoringPage}`);
-          if (event.data.proctoringAction === 'end_session') {
-              console.log('Received end session signal from iframe.');
-              stopProctoring();
-              proctoringContainer.style.display = 'none';
-              statusDiv.style.display = 'none';
-              video.style.display = 'none';
-              sessionEndedMessage.style.display = 'block';
+      if (toggleBtn) {
+          toggleBtn.addEventListener("click", () => {
+              console.log("[DEBUG] Sidebar toggled.");
+              sidebar.classList.toggle("collapsed")
+          });
+      }
+      window.addEventListener("message", (event) => {
+          if (event.origin !== window.location.origin || !event.data) return;
+          if (event.data.proctoringPage) {
+              console.log(`[DEBUG] Iframe navigated to: ${event.data.proctoringPage}`);
           }
-      }, false);
+          if (event.data.proctoringAction === "end_session") {
+              console.log("[DEBUG] Received 'end_session' command from iframe.");
+              stopProctoring();
+              proctoringLayout.innerHTML = '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"><h1>Session Ended</h1></div>';
+              document.body.classList.remove('proctoring-active');
+          }
+      });
+
+      // --- Core Proctoring Functions with Debugging ---
 
       async function startProctoring() {
+          console.log("[DEBUG] Attempting to start proctoring session...");
           try {
-              statusDiv.textContent = 'Requesting camera access...';
+              statusDiv.textContent = 'Requesting camera...';
               const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-
-              // --- CORRECTED LOGIC ---
-              console.log('Camera permission granted. Loading problem...');
+              console.log("[DEBUG] Camera access granted.");
               video.srcObject = stream;
-              video.style.display = 'block'; // Show the video feed
-              proctoringIntro.style.display = 'none'; // Hide ONLY the intro div
-              proctoringContainer.style.display = 'block';
-              iframe.src = problemUrl;
-
               isProctoring = true;
+
+              startupInfo.style.display = "none";
+              proctoringLayout.style.display = "flex";
+              document.body.classList.add('proctoring-active');
+              iframe.src = problemUrl;
+              console.log(`[DEBUG] Iframe src set to: ${problemUrl}`);
+
               initWebSocket();
               initMediaRecorder(stream);
               analysisInterval = setInterval(sendFrameForAnalysis, ANALYSIS_INTERVAL_MS);
-
           } catch (error) {
-              console.error('Error starting proctoring:', error);
-              statusDiv.textContent = 'Could not access camera. Please check permissions.';
+              console.error('[DEBUG] Error starting proctoring:', error);
+              statusDiv.textContent = 'Could not access camera.';
           }
       }
 
       function initWebSocket() {
-          const wsUrl = API_BASE_URL.replace('http', 'ws');
-          socket = new WebSocket(`${wsUrl}/ws`);
-
+          console.log(`[DEBUG] Initializing WebSocket to: ${API_BASE_URL.replace('http', 'ws')}/ws`);
+          socket = new WebSocket(`${API_BASE_URL.replace('http', 'ws')}/ws`);
           socket.onopen = () => {
-              statusDiv.textContent = 'Connected to server. Proctoring started.';
-              console.log('WebSocket connection established.');
+              console.log("[DEBUG] WebSocket connection opened.");
+              statusDiv.textContent = 'Connected to server.';
           };
-
           socket.onmessage = (event) => {
               const data = JSON.parse(event.data);
-              if (data.is_compliant) {
-                  statusDiv.textContent = 'Status: Compliant';
-              } else {
-                  const violationMsg = data.violations.map(v => v.message).join(', ');
-                  statusDiv.textContent = `VIOLATION DETECTED: ${violationMsg}`;
-              }
+              console.log("[DEBUG] WebSocket message received:", data);
+              statusDiv.textContent = data.is_compliant ? 'Status: Compliant' : `VIOLATION: ${data.violations.map(v => v.message).join(', ')}`;
               if (data.trigger_upload && !isFinalizingClip) {
+                  console.log("[DEBUG] 'trigger_upload' received from server.");
+                  statusDiv.textContent = 'Violation detected. Finalizing clip...';
                   finalizeAndUploadClip();
               }
           };
-
-          socket.onclose = () => {
-              statusDiv.textContent = 'Connection lost. Proctoring stopped.';
-              stopProctoring();
+          socket.onclose = (e) => {
+              console.log(`[DEBUG] WebSocket closed. Code: ${e.code}`);
+              if (isProctoring) stopProctoring();
           };
-
           socket.onerror = (error) => {
-              statusDiv.textContent = 'An error occurred. Proctoring stopped.';
-              console.error('WebSocket error:', error);
-              stopProctoring();
+              console.error("[DEBUG] WebSocket error:", error);
+              if (isProctoring) stopProctoring();
           };
       }
 
       function initMediaRecorder(stream) {
+          console.log("[DEBUG] Initializing MediaRecorder.");
           mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-
           mediaRecorder.ondataavailable = (event) => {
               if (event.data.size > 0) {
                   recordedChunks.push(event.data);
                   if (!isFinalizingClip) {
                       const totalSeconds = recordedChunks.length;
                       if (totalSeconds > PRE_VIOLATION_BUFFER_SECONDS) {
-                          recordedChunks.splice(0, totalSeconds - PRE_VIOLATION_BUFFER_SECONDS);
+                          const removedCount = totalSeconds - PRE_VIOLATION_BUFFER_SECONDS;
+                          recordedChunks.splice(0, removedCount);
                       }
                   }
               }
           };
-
           mediaRecorder.onstop = async () => {
-              if (recordedChunks.length === 0) {
-                  console.log('No video chunks recorded. Skipping upload.');
-                  isFinalizingClip = false;
-                  if (isProctoring) mediaRecorder.start(1000);
-                  return;
-              }
-
-              console.log(`MediaRecorder stopped. Creating blob from ${recordedChunks.length} chunks.`);
+              console.log("[DEBUG] MediaRecorder stopped. Processing chunks...");
               const clipBlob = new Blob(recordedChunks, { type: 'video/webm' });
-              const formData = new FormData();
-              formData.append('file', clipBlob, `violation_clip_${new Date().toISOString()}.webm`);
-              try {
-                  statusDiv.textContent = 'Uploading violation evidence...';
-                  const response = await fetch(`${API_BASE_URL}/upload-clip`, {
-                      method: 'POST',
-                      body: formData,
-                  });
-                  const result = await response.json();
-                  console.log('Upload result:', result);
-                  statusDiv.textContent = 'Evidence uploaded. Resuming proctoring.';
-              } catch (error) {
-                  console.error('Error uploading clip:', error);
-                  statusDiv.textContent = 'Failed to upload evidence.';
-              } finally {
-                  recordedChunks = [];
-                  isFinalizingClip = false;
-                  if (isProctoring) {
-                      mediaRecorder.start(1000);
-                  }
+              if (clipBlob.size > 0) {
+                  console.log(`[DEBUG] Uploading clip of size: ${clipBlob.size}`);
+                  const formData = new FormData();
+                  formData.append('file', clipBlob, `violation.webm`);
+                  try {
+                      await fetch(`${API_BASE_URL}/upload-clip`, { method: 'POST', body: formData });
+                      console.log("[DEBUG] Upload request sent.");
+                  } catch (error) { console.error('[DEBUG] Upload fetch error:', error); }
+              }
+              recordedChunks = [];
+              isFinalizingClip = false;
+              if (isProctoring) {
+                  console.log("[DEBUG] Restarting MediaRecorder.");
+                  mediaRecorder.start(1000);
               }
           };
-
           mediaRecorder.start(1000);
-          console.log('MediaRecorder started.');
+          console.log("[DEBUG] MediaRecorder started.");
       }
 
       function sendFrameForAnalysis() {
-          if (socket && socket.readyState === WebSocket.OPEN && video.readyState >= 2) {
-              const context = canvas.getContext('2d');
-              context.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-              socket.send(dataUrl.split(',')[1]);
+          if (socket && socket.readyState === WebSocket.OPEN) {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+              socket.send(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]);
           }
       }
 
       function finalizeAndUploadClip() {
+          if (isFinalizingClip) return;
+          console.log(`[DEBUG] Finalizing clip. Recording for ${POST_VIOLATION_RECORD_SECONDS} more seconds.`);
           isFinalizingClip = true;
-          console.log('Violation detected. Finalizing clip...');
           setTimeout(() => {
               if (mediaRecorder && mediaRecorder.state === 'recording') {
-                  console.log('Post-violation recording complete. Stopping MediaRecorder to trigger upload.');
+                  console.log("[DEBUG] Stopping MediaRecorder to trigger upload.");
                   mediaRecorder.stop();
               }
           }, POST_VIOLATION_RECORD_SECONDS * 1000);
@@ -233,7 +292,7 @@ body %}
 
       function stopProctoring() {
           if (!isProctoring) return;
-          console.log('Stopping all proctoring resources.');
+          console.log("[DEBUG] Stopping proctoring session and cleaning up resources.");
           isProctoring = false;
           clearInterval(analysisInterval);
           if (socket) socket.close();
@@ -241,6 +300,6 @@ body %}
           if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
       }
   });
-  {% endraw %}
+  {%- endraw -%}
 </script>
 {% endblock %}

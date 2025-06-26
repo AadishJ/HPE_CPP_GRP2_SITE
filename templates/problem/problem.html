@@ -342,11 +342,21 @@ contest_problem.contest.use_clarifications %}
 {% else %} {% include "comments/list.html" %} {% endif %} {% endblock %} {%
 block bodyend %} {{ super() }} {% include "comments/math.html" %}
 <script>
-  // If this page is loaded inside the proctoring iframe, notify the parent wrapper.
+  // If this page is loaded inside an iframe, hide header/footer and notify the parent.
   if (window.parent !== window) {
+    // Hide header and footer unconditionally when in an iframe.
+    const nav = document.getElementById("navigation");
+    const footer = document.querySelector("footer");
+    if (nav) nav.style.display = "none";
+    if (footer) footer.style.display = "none";
+    // Adjust content margin that was there for the header.
+    const content = document.getElementById("content");
+    if (content) content.style.marginTop = "0";
+
+    // Notify the parent wrapper that this page has loaded.
     window.parent.postMessage(
       { proctoringPage: "problem_detail" },
-      "http://127.0.0.1:8000"
+      window.location.origin
     );
   }
 </script>

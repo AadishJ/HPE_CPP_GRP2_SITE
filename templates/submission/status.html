@@ -147,14 +147,23 @@ perms.judge.abort_any_submission %}
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    // If this page is loaded inside the proctoring iframe...
+    // If this page is loaded inside an iframe...
     if (window.parent !== window) {
+      // Hide header and footer unconditionally when in an iframe.
+      const nav = document.getElementById("navigation");
+      const footer = document.querySelector("footer");
+      if (nav) nav.style.display = "none";
+      if (footer) footer.style.display = "none";
+      // Adjust content margin that was there for the header.
+      const content = document.getElementById("content");
+      if (content) content.style.marginTop = "0";
+
       const endButton = document.getElementById("end-proctoring-btn");
 
       // Notify the parent that the status page has loaded.
       window.parent.postMessage(
         { proctoringPage: "submission_status" },
-        "http://127.0.0.1:8000"
+        window.location.origin
       );
 
       // When the 'End Session' button is clicked, send a final message.
@@ -167,7 +176,7 @@ perms.judge.abort_any_submission %}
           ) {
             window.parent.postMessage(
               { proctoringAction: "end_session" },
-              "http://127.0.0.1:8000"
+              window.location.origin
             );
           }
         });
