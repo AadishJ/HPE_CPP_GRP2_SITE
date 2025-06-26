@@ -1,0 +1,246 @@
+{% extends "base.html" %} {% block title %}{{ title }}{% endblock %} {% block
+body %}
+<!-- This div now ONLY contains the intro text and button -->
+<div id="proctoring-intro">
+  <h1>{{ title }}</h1>
+  <p>
+    You are about to start a proctoring session for problem:
+    <strong>{{ problem.name }}</strong>.
+  </p>
+  <p>
+    Please ensure you are in a quiet environment and have your webcam enabled.
+    Click the button below to grant camera permissions and begin the exam.
+  </p>
+  <button id="startBtn" class="button">Start Proctoring Session</button>
+</div>
+
+<!-- These elements are for the live view and are now separate -->
+<video
+  id="webcam"
+  autoplay
+  muted
+  playsinline
+  width="640"
+  height="480"
+  style="display: none"
+></video>
+<canvas id="canvas" width="320" height="240" style="display: none"></canvas>
+<div id="status" class="alert alert-info">Not Started</div>
+
+<!-- This container holds the DMOJ problem page -->
+<div
+  id="proctoring-container"
+  style="display: none; width: 100%; height: 80vh; margin-top: 20px"
+>
+  <iframe
+    id="dmoj-problem-frame"
+    src="about:blank"
+    style="width: 100%; height: 100%; border: 1px solid #ccc"
+  ></iframe>
+</div>
+
+<div
+  id="session-ended-message"
+  style="display: none; text-align: center; padding: 40px"
+>
+  <h1>Proctoring Session Ended</h1>
+  <p>
+    Your session has been successfully completed. You may now close this window.
+  </p>
+</div>
+
+<!-- Step 1: Define dynamic variables -->
+<script>
+  const problemUrl = "{{ url('problem_detail', problem.code) }}";
+  const API_BASE_URL = "http://127.0.0.1:8001";
+</script>
+
+<!-- Step 2: Load the main script inside a 'raw' block -->
+<script>
+  {% raw %}
+  document.addEventListener('DOMContentLoaded', () => {
+      // Get references to all HTML elements
+      const proctoringIntro = document.getElementById('proctoring-intro');
+      const video = document.getElementById('webcam');
+      const canvas = document.getElementById('canvas');
+      const statusDiv = document.getElementById('status');
+      const startBtn = document.getElementById('startBtn');
+      const proctoringContainer = document.getElementById('proctoring-container');
+      const iframe = document.getElementById('dmoj-problem-frame');
+      const sessionEndedMessage = document.getElementById('session-ended-message');
+
+      let socket;
+      let mediaRecorder;
+      let recordedChunks = [];
+      let isProctoring = false;
+      let isFinalizingClip = false;
+      let analysisInterval;
+
+      const ANALYSIS_INTERVAL_MS = 500;
+      const PRE_VIOLATION_BUFFER_SECONDS = 10;
+      const POST_VIOLATION_RECORD_SECONDS = 15;
+
+      if (startBtn) {
+          startBtn.addEventListener('click', () => {
+              if (!isProctoring) {
+                  startProctoring();
+              }
+          });
+      }
+
+      window.addEventListener('message', (event) => {
+          if (event.origin !== "http://127.0.0.1:8000") return;
+          if (event.data.proctoringPage) console.log(`User is now on page: ${event.data.proctoringPage}`);
+          if (event.data.proctoringAction === 'end_session') {
+              console.log('Received end session signal from iframe.');
+              stopProctoring();
+              proctoringContainer.style.display = 'none';
+              statusDiv.style.display = 'none';
+              video.style.display = 'none';
+              sessionEndedMessage.style.display = 'block';
+          }
+      }, false);
+
+      async function startProctoring() {
+          try {
+              statusDiv.textContent = 'Requesting camera access...';
+              const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+
+              // --- CORRECTED LOGIC ---
+              console.log('Camera permission granted. Loading problem...');
+              video.srcObject = stream;
+              video.style.display = 'block'; // Show the video feed
+              proctoringIntro.style.display = 'none'; // Hide ONLY the intro div
+              proctoringContainer.style.display = 'block';
+              iframe.src = problemUrl;
+
+              isProctoring = true;
+              initWebSocket();
+              initMediaRecorder(stream);
+              analysisInterval = setInterval(sendFrameForAnalysis, ANALYSIS_INTERVAL_MS);
+
+          } catch (error) {
+              console.error('Error starting proctoring:', error);
+              statusDiv.textContent = 'Could not access camera. Please check permissions.';
+          }
+      }
+
+      function initWebSocket() {
+          const wsUrl = API_BASE_URL.replace('http', 'ws');
+          socket = new WebSocket(`${wsUrl}/ws`);
+
+          socket.onopen = () => {
+              statusDiv.textContent = 'Connected to server. Proctoring started.';
+              console.log('WebSocket connection established.');
+          };
+
+          socket.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              if (data.is_compliant) {
+                  statusDiv.textContent = 'Status: Compliant';
+              } else {
+                  const violationMsg = data.violations.map(v => v.message).join(', ');
+                  statusDiv.textContent = `VIOLATION DETECTED: ${violationMsg}`;
+              }
+              if (data.trigger_upload && !isFinalizingClip) {
+                  finalizeAndUploadClip();
+              }
+          };
+
+          socket.onclose = () => {
+              statusDiv.textContent = 'Connection lost. Proctoring stopped.';
+              stopProctoring();
+          };
+
+          socket.onerror = (error) => {
+              statusDiv.textContent = 'An error occurred. Proctoring stopped.';
+              console.error('WebSocket error:', error);
+              stopProctoring();
+          };
+      }
+
+      function initMediaRecorder(stream) {
+          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+
+          mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                  recordedChunks.push(event.data);
+                  if (!isFinalizingClip) {
+                      const totalSeconds = recordedChunks.length;
+                      if (totalSeconds > PRE_VIOLATION_BUFFER_SECONDS) {
+                          recordedChunks.splice(0, totalSeconds - PRE_VIOLATION_BUFFER_SECONDS);
+                      }
+                  }
+              }
+          };
+
+          mediaRecorder.onstop = async () => {
+              if (recordedChunks.length === 0) {
+                  console.log('No video chunks recorded. Skipping upload.');
+                  isFinalizingClip = false;
+                  if (isProctoring) mediaRecorder.start(1000);
+                  return;
+              }
+
+              console.log(`MediaRecorder stopped. Creating blob from ${recordedChunks.length} chunks.`);
+              const clipBlob = new Blob(recordedChunks, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('file', clipBlob, `violation_clip_${new Date().toISOString()}.webm`);
+              try {
+                  statusDiv.textContent = 'Uploading violation evidence...';
+                  const response = await fetch(`${API_BASE_URL}/upload-clip`, {
+                      method: 'POST',
+                      body: formData,
+                  });
+                  const result = await response.json();
+                  console.log('Upload result:', result);
+                  statusDiv.textContent = 'Evidence uploaded. Resuming proctoring.';
+              } catch (error) {
+                  console.error('Error uploading clip:', error);
+                  statusDiv.textContent = 'Failed to upload evidence.';
+              } finally {
+                  recordedChunks = [];
+                  isFinalizingClip = false;
+                  if (isProctoring) {
+                      mediaRecorder.start(1000);
+                  }
+              }
+          };
+
+          mediaRecorder.start(1000);
+          console.log('MediaRecorder started.');
+      }
+
+      function sendFrameForAnalysis() {
+          if (socket && socket.readyState === WebSocket.OPEN && video.readyState >= 2) {
+              const context = canvas.getContext('2d');
+              context.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+              socket.send(dataUrl.split(',')[1]);
+          }
+      }
+
+      function finalizeAndUploadClip() {
+          isFinalizingClip = true;
+          console.log('Violation detected. Finalizing clip...');
+          setTimeout(() => {
+              if (mediaRecorder && mediaRecorder.state === 'recording') {
+                  console.log('Post-violation recording complete. Stopping MediaRecorder to trigger upload.');
+                  mediaRecorder.stop();
+              }
+          }, POST_VIOLATION_RECORD_SECONDS * 1000);
+      }
+
+      function stopProctoring() {
+          if (!isProctoring) return;
+          console.log('Stopping all proctoring resources.');
+          isProctoring = false;
+          clearInterval(analysisInterval);
+          if (socket) socket.close();
+          if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+          if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+      }
+  });
+  {% endraw %}
+</script>
+{% endblock %}

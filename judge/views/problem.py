@@ -215,6 +215,15 @@ class ProblemDetail(ProblemMixin, SolvedProblemMixin, CommentedDetailView):
         return context
 
 
+class ProctoringWrapperView(ProblemMixin, TitleMixin, DetailView):
+    template_name = 'problem/proctor_wrapper.html'
+    context_object_name = 'problem'
+    title = gettext_lazy('Proctoring Session')
+
+    def get_title(self):
+        return _('Proctoring for {0}').format(self.object.name)
+
+
 class ProblemVote(ProblemMixin, DetailView):
     context_object_name = 'problem'
     template_name = 'problem/vote-ajax.html'

@@ -262,4 +262,10 @@
             </div>
         {% endif %}
     </form>
+    <script>
+        // If this page is loaded inside the proctoring iframe, notify the parent wrapper.
+        if (window.parent !== window) {
+            window.parent.postMessage({ proctoringPage: 'problem_submit' }, 'http://127.0.0.1:8000');
+        }
+    </script>
 {% endblock %}
