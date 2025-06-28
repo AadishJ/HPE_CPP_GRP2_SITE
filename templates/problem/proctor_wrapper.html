@@ -128,8 +128,14 @@ body %}
 </div>
 
 <script>
+  window.dmojData = {{ dmoj_data|tojson }};
+</script>
+
+<script>
   {%- raw -%}
   document.addEventListener("DOMContentLoaded", function () {
+      // The window.dmojData object is now available here.
+
       // --- UI & Server Configuration ---
       const API_BASE_URL = "http://127.0.0.1:8001";
       const startBtn = document.getElementById("startBtn");
@@ -143,16 +149,15 @@ body %}
       const statusDiv = document.getElementById("status");
       const problemUrl = startupInfo.getAttribute('data-problem-url');
 
-      // --- Proctoring State & Config ---
-      let socket, mediaRecorder, analysisInterval;
+      // --- Proctoring State & Config (from your new script) ---
+      let socket, mediaRecorder;
       let recordedChunks = [];
       let isProctoring = false;
-      let isFinalizingClip = false;
+      let isUploading = false;
       const ANALYSIS_INTERVAL_MS = 500;
-      const PRE_VIOLATION_BUFFER_SECONDS = 10;
-      const POST_VIOLATION_RECORD_SECONDS = 15;
+      const ROLLING_BUFFER_SECONDS = 20;
 
-      // --- Event Listeners for UI ---
+      // --- Event Listeners for UI (from existing template) ---
       if (startBtn) {
           startBtn.addEventListener("click", () => {
               console.log("[DEBUG] Start button clicked.");
@@ -178,95 +183,142 @@ body %}
           }
       });
 
-      // --- Core Proctoring Functions with Debugging ---
+      // --- Core Proctoring Functions (Merged Logic) ---
 
       async function startProctoring() {
           console.log("[DEBUG] Attempting to start proctoring session...");
           try {
-              statusDiv.textContent = 'Requesting camera...';
+              statusDiv.textContent = 'Requesting camera access...';
               const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-              console.log("[DEBUG] Camera access granted.");
               video.srcObject = stream;
-              isProctoring = true;
+              video.play(); // Required for some browsers
 
+              isProctoring = true;
+              startBtn.disabled = true;
+              startBtn.textContent = 'Proctoring Active';
+
+              // Setup UI
               startupInfo.style.display = "none";
               proctoringLayout.style.display = "flex";
               document.body.classList.add('proctoring-active');
               iframe.src = problemUrl;
               console.log(`[DEBUG] Iframe src set to: ${problemUrl}`);
 
+              // Initialize backend connections
               initWebSocket();
               initMediaRecorder(stream);
-              analysisInterval = setInterval(sendFrameForAnalysis, ANALYSIS_INTERVAL_MS);
+              setInterval(sendFrameForAnalysis, ANALYSIS_INTERVAL_MS);
           } catch (error) {
-              console.error('[DEBUG] Error starting proctoring:', error);
-              statusDiv.textContent = 'Could not access camera.';
+              console.error('Error starting proctoring:', error);
+              statusDiv.textContent = 'Could not access camera. Please check permissions.';
           }
       }
 
+      /**
+       * Initializes the WebSocket connection. (Using your new logic)
+       */
       function initWebSocket() {
-          console.log(`[DEBUG] Initializing WebSocket to: ${API_BASE_URL.replace('http', 'ws')}/ws`);
-          socket = new WebSocket(`${API_BASE_URL.replace('http', 'ws')}/ws`);
-          socket.onopen = () => {
-              console.log("[DEBUG] WebSocket connection opened.");
-              statusDiv.textContent = 'Connected to server.';
-          };
-          socket.onmessage = (event) => {
-              const data = JSON.parse(event.data);
-              console.log("[DEBUG] WebSocket message received:", data);
-              statusDiv.textContent = data.is_compliant ? 'Status: Compliant' : `VIOLATION: ${data.violations.map(v => v.message).join(', ')}`;
-              if (data.trigger_upload && !isFinalizingClip) {
-                  console.log("[DEBUG] 'trigger_upload' received from server.");
-                  statusDiv.textContent = 'Violation detected. Finalizing clip...';
-                  finalizeAndUploadClip();
-              }
-          };
-          socket.onclose = (e) => {
-              console.log(`[DEBUG] WebSocket closed. Code: ${e.code}`);
+          // Use the API_BASE_URL we defined earlier
+          const wsUrl = `${API_BASE_URL.replace('http', 'ws')}/ws`;
+          console.log(`[DEBUG] Initializing WebSocket to: ${wsUrl}`);
+          socket = new WebSocket(wsUrl);
+
+          socket.onopen = () => statusDiv.textContent = 'Connected. Proctoring started.';
+          socket.onclose = () => {
+              statusDiv.textContent = 'Connection lost.';
               if (isProctoring) stopProctoring();
           };
           socket.onerror = (error) => {
-              console.error("[DEBUG] WebSocket error:", error);
+              console.error('WebSocket error:', error);
+              statusDiv.textContent = 'An error occurred.';
               if (isProctoring) stopProctoring();
+          };
+          socket.onmessage = (event) => {
+              const data = JSON.parse(event.data);
+              console.log('Server response:', data);
+              statusDiv.textContent = data.is_compliant ? 'Status: Compliant' : `VIOLATION: ${data.violations[0]?.message || 'Pattern detected'}`;
+
+              if (data.trigger_pattern_upload && !isUploading) {
+                  handleViolationUpload();
+              }
           };
       }
 
+      /**
+       * Initializes MediaRecorder with rolling buffer. (Using your new logic)
+       */
       function initMediaRecorder(stream) {
           console.log("[DEBUG] Initializing MediaRecorder.");
-          mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+          const options = { mimeType: 'video/webm; codecs=vp9' };
+          mediaRecorder = new MediaRecorder(stream, options);
+
           mediaRecorder.ondataavailable = (event) => {
               if (event.data.size > 0) {
                   recordedChunks.push(event.data);
-                  if (!isFinalizingClip) {
-                      const totalSeconds = recordedChunks.length;
-                      if (totalSeconds > PRE_VIOLATION_BUFFER_SECONDS) {
-                          const removedCount = totalSeconds - PRE_VIOLATION_BUFFER_SECONDS;
-                          recordedChunks.splice(0, removedCount);
-                      }
+              }
+              const maxBufferLength = ROLLING_BUFFER_SECONDS + 1; // +1 for the header
+              while (recordedChunks.length > maxBufferLength) {
+                  // The header is at index 0. The oldest data chunk is at index 1.
+                  recordedChunks.splice(1, 1);
+              }
+          };
+
+          mediaRecorder.onstop = async () => {
+              console.log(`[DEBUG] MediaRecorder stopped. Buffer has ${recordedChunks.length} chunks.`);
+              if (recordedChunks.length === 0) {
+                  console.warn("[DEBUG] No video chunks recorded, skipping upload.");
+                  isUploading = false;
+                  if (isProctoring) mediaRecorder.start(1000);
+                  return;
+              }
+
+              const clipBlob = new Blob(recordedChunks, { type: 'video/webm' });
+              const formData = new FormData();
+              formData.append('file', clipBlob, `violation_${new Date().toISOString()}.webm`);
+
+              // This now correctly reads the user ID, username, and problem code
+              // from the global dmojData object and adds them to the form data.
+              formData.append('dmoj_user_id', window.dmojData.userId);
+              formData.append('dmoj_user_name', window.dmojData.username);
+              formData.append('dmoj_problem_name', window.dmojData.problemCode);
+
+              try {
+                  statusDiv.textContent = 'Uploading evidence...';
+                  // Use the API_BASE_URL we defined earlier
+                  const response = await fetch(`${API_BASE_URL}/upload-clip`, { method: 'POST', body: formData });
+                  if (!response.ok) {
+                      // Provide more detail on error
+                      const errorText = await response.text();
+                      throw new Error(`Server responded with ${response.status}: ${errorText}`);
+                  }
+                  const result = await response.json();
+                  console.log('Upload result:', result);
+                  statusDiv.textContent = 'Evidence uploaded. Resuming proctoring.';
+              } catch (error) {
+                  console.error('Error uploading clip:', error);
+                  statusDiv.textContent = 'Failed to upload evidence. See console for details.';
+              } finally {
+                  recordedChunks = [];
+                  isUploading = false;
+                  if (isProctoring) {
+                      mediaRecorder.start(1000);
                   }
               }
           };
-          mediaRecorder.onstop = async () => {
-              console.log("[DEBUG] MediaRecorder stopped. Processing chunks...");
-              const clipBlob = new Blob(recordedChunks, { type: 'video/webm' });
-              if (clipBlob.size > 0) {
-                  console.log(`[DEBUG] Uploading clip of size: ${clipBlob.size}`);
-                  const formData = new FormData();
-                  formData.append('file', clipBlob, `violation.webm`);
-                  try {
-                      await fetch(`${API_BASE_URL}/upload-clip`, { method: 'POST', body: formData });
-                      console.log("[DEBUG] Upload request sent.");
-                  } catch (error) { console.error('[DEBUG] Upload fetch error:', error); }
-              }
-              recordedChunks = [];
-              isFinalizingClip = false;
-              if (isProctoring) {
-                  console.log("[DEBUG] Restarting MediaRecorder.");
-                  mediaRecorder.start(1000);
-              }
-          };
-          mediaRecorder.start(1000);
-          console.log("[DEBUG] MediaRecorder started.");
+
+          mediaRecorder.start(1000); // Capture chunks every second
+          console.log(`[DEBUG] MediaRecorder started, maintaining a ${ROLLING_BUFFER_SECONDS}s buffer.`);
+      }
+
+      /**
+      * Handles violation upload trigger. (Using your new function)
+      */
+      function handleViolationUpload() {
+          if (!mediaRecorder || mediaRecorder.state !== 'recording' || isUploading) return;
+          isUploading = true;
+          console.log('Pattern violation detected. Uploading existing buffer.');
+          statusDiv.textContent = 'Violation detected. Uploading evidence...';
+          mediaRecorder.stop();
       }
 
       function sendFrameForAnalysis() {
@@ -278,26 +330,19 @@ body %}
           }
       }
 
-      function finalizeAndUploadClip() {
-          if (isFinalizingClip) return;
-          console.log(`[DEBUG] Finalizing clip. Recording for ${POST_VIOLATION_RECORD_SECONDS} more seconds.`);
-          isFinalizingClip = true;
-          setTimeout(() => {
-              if (mediaRecorder && mediaRecorder.state === 'recording') {
-                  console.log("[DEBUG] Stopping MediaRecorder to trigger upload.");
-                  mediaRecorder.stop();
-              }
-          }, POST_VIOLATION_RECORD_SECONDS * 1000);
-      }
-
       function stopProctoring() {
           if (!isProctoring) return;
           console.log("[DEBUG] Stopping proctoring session and cleaning up resources.");
           isProctoring = false;
-          clearInterval(analysisInterval);
+
+          // Clear all intervals and stop all media
+          for (let i = 1; i < 99999; i++) window.clearInterval(i);
           if (socket) socket.close();
           if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
           if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+
+          startBtn.disabled = false;
+          startBtn.textContent = 'Start Proctoring Session';
       }
   });
   {%- endraw -%}

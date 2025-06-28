@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import shutil
+import json
 from datetime import timedelta
 from operator import itemgetter
 from random import randrange
@@ -222,6 +223,16 @@ class ProctoringWrapperView(ProblemMixin, TitleMixin, DetailView):
 
     def get_title(self):
         return _('Proctoring for {0}').format(self.object.name)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['dmoj_data'] = {
+            'userId': user.id if user.is_authenticated else None,
+            'username': user.username if user.is_authenticated else 'AnonymousUser',
+            'problemCode': self.object.code,
+        }
+        return context
 
 
 class ProblemVote(ProblemMixin, DetailView):
