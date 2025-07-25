@@ -1,0 +1,347 @@
+<!-- Global Contest Mode Script - Include this in base template when user is in contest -->
+<script type="text/javascript">
+(function() {
+    'use strict';
+    
+    // Contest mode state - available globally
+    window.dmojContestMode = window.dmojContestMode || {
+        inContest: {{ 'true' if request.user.is_authenticated and request.profile.current_contest and not request.participation.spectate else 'false' }},
+        contestKey: {{ request.profile.current_contest.contest.key|escapejs if request.user.is_authenticated and request.profile.current_contest else 'null' }},
+        hasExitedContest: false,
+        fullscreenEnabled: false,
+        initialized: false
+    };
+    
+    // Only initialize if user is in contest and not already initialized
+    if (!window.dmojContestMode.inContest || window.dmojContestMode.initialized) {
+        return;
+    }
+    
+    console.log('Initializing global contest mode for contest:', window.dmojContestMode.contestKey);
+    
+    // Mark as initialized to prevent multiple initializations
+    window.dmojContestMode.initialized = true;
+    
+    // Cookie utility functions
+    function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length == 2) return parts.pop().split(";").shift();
+        return null;
+    }
+    
+    function setCookie(name, value, maxAge) {
+        document.cookie = name + "=" + value + "; path=/; max-age=" + (maxAge || 3600) + "; SameSite=Lax";
+    }
+    
+    function deleteCookie(name) {
+        document.cookie = name + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+    }
+    
+    // Check if we need to show fullscreen overlay
+    function shouldShowFullscreenOverlay() {
+        var joinFlag = getCookie('dmoj_joining_contest');
+        var contestJustJoined = getCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
+        var fullscreenShown = getCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey);
+        
+        return (joinFlag === 'true' || contestJustJoined === 'true' || !fullscreenShown);
+    }
+    
+    // Create and show fullscreen overlay
+    function showFullscreenOverlay() {
+        console.log('Creating fullscreen overlay');
+        
+        // Remove any existing overlay
+        var existingOverlay = document.getElementById('contest-fullscreen-overlay');
+        if (existingOverlay) {
+            document.body.removeChild(existingOverlay);
+        }
+        
+        var overlay = document.createElement('div');
+        overlay.id = 'contest-fullscreen-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            cursor: pointer;
+            font-family: Arial, sans-serif;
+        `;
+        
+        var heading = document.createElement('h1');
+        heading.textContent = '{{ _("Contest Mode Activated") }}';
+        heading.style.cssText = 'margin-bottom: 20px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);';
+        
+        var instructions = document.createElement('p');
+        instructions.textContent = '{{ _("Click anywhere to enter fullscreen contest mode") }}';
+        instructions.style.cssText = 'font-size: 18px; margin-bottom: 30px; max-width: 600px; line-height: 1.5;';
+        
+        var warning = document.createElement('p');
+        warning.textContent = '{{ _("⚠️ Exiting fullscreen or switching tabs will immediately remove you from the contest") }}';
+        warning.style.cssText = 'font-size: 16px; color: #ff6b6b; font-weight: bold; max-width: 600px; line-height: 1.5;';
+        
+        var contestInfo = document.createElement('p');
+        contestInfo.textContent = '{{ _("Contest:") }} ' + (window.dmojContestMode.contestKey || 'Unknown');
+        contestInfo.style.cssText = 'font-size: 14px; color: #aaa; margin-top: 30px;';
+        
+        overlay.appendChild(heading);
+        overlay.appendChild(instructions);
+        overlay.appendChild(warning);
+        overlay.appendChild(contestInfo);
+        
+        document.body.appendChild(overlay);
+        
+        // Handle overlay click
+        overlay.addEventListener('click', function() {
+            console.log('User clicked overlay, requesting fullscreen');
+            requestFullscreen().then(function() {
+                console.log('Fullscreen entered successfully');
+                window.dmojContestMode.fullscreenEnabled = true;
+                
+                // Mark that fullscreen overlay has been shown for this contest
+                setCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey, 'true', 3600);
+                
+                // Clean up cookies
+                deleteCookie('dmoj_joining_contest');
+                deleteCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
+                
+                // Remove overlay
+                setTimeout(function() {
+                    if (document.body.contains(overlay)) {
+                        document.body.removeChild(overlay);
+                    }
+                }, 500);
+                
+                // Initialize contest monitoring
+                initializeContestMonitoring();
+                
+            }).catch(function(err) {
+                console.error('Failed to enter fullscreen:', err);
+                // Still remove overlay and initialize monitoring
+                if (document.body.contains(overlay)) {
+                    document.body.removeChild(overlay);
+                }
+                // Set fullscreen as enabled even if it failed, to prevent repeated attempts
+                setCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey, 'true', 3600);
+                initializeContestMonitoring();
+            });
+        });
+    }
+    
+    // Request fullscreen with cross-browser support
+    function requestFullscreen() {
+        console.log('Attempting to enter fullscreen');
+        try {
+            var docEl = document.documentElement;
+            if (docEl.requestFullscreen) {
+                return docEl.requestFullscreen();
+            } else if (docEl.webkitRequestFullscreen) {
+                docEl.webkitRequestFullscreen();
+                return Promise.resolve();
+            } else if (docEl.msRequestFullscreen) {
+                docEl.msRequestFullscreen();
+                return Promise.resolve();
+            } else if (docEl.mozRequestFullScreen) {
+                docEl.mozRequestFullScreen();
+                return Promise.resolve();
+            } else {
+                console.log('No fullscreen API available');
+                return Promise.reject('No fullscreen API');
+            }
+        } catch (e) {
+            console.error('Error requesting fullscreen:', e);
+            return Promise.reject(e);
+        }
+    }
+    
+    // Initialize contest monitoring (fullscreen exit, tab switching, etc.)
+    function initializeContestMonitoring() {
+        console.log('Initializing contest monitoring');
+        
+        // Prevent ESC key from exiting fullscreen
+        document.addEventListener('keydown', function(e) {
+            if ((e.key === 'Escape' || e.keyCode === 27) && !window.dmojContestMode.hasExitedContest) {
+                console.log('ESC key pressed, preventing default behavior');
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return false;
+            }
+        }, true);
+        
+        // Monitor fullscreen changes
+        function handleFullscreenChange() {
+            console.log('Fullscreen change detected');
+            var isFullscreen = document.fullscreenElement || 
+                             document.webkitFullscreenElement || 
+                             document.msFullscreenElement ||
+                             document.mozFullScreenElement;
+            
+            console.log('Current fullscreen element:', isFullscreen);
+            
+            if (!isFullscreen && !window.dmojContestMode.hasExitedContest && window.dmojContestMode.fullscreenEnabled) {
+                console.log('Fullscreen exited unexpectedly, auto-exiting contest');
+                exitContest('Fullscreen mode was exited');
+            }
+        }
+        
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('msfullscreenchange', handleFullscreenChange);
+        
+        // Monitor tab/window visibility changes
+        document.addEventListener('visibilitychange', function() {
+            console.log('Visibility changed, document.hidden =', document.hidden);
+            if (document.hidden && !window.dmojContestMode.hasExitedContest) {
+                console.log('Tab/window switched, auto-exiting contest');
+                exitContest('Tab switching detected');
+            }
+        });
+        
+        // Monitor page unload
+        window.addEventListener('beforeunload', function(e) {
+            if (!window.dmojContestMode.hasExitedContest) {
+                console.log('Page navigation detected, auto-exiting contest');
+                exitContest('Page navigation detected');
+            }
+        });
+        
+        // Monitor history changes (for SPA-like navigation)
+        var originalPushState = history.pushState;
+        var originalReplaceState = history.replaceState;
+        
+        history.pushState = function() {
+            console.log('History pushState detected, args:', arguments);
+            if (!window.dmojContestMode.hasExitedContest) {
+                var newUrl = arguments[2];
+                if (newUrl && !newUrl.includes('/contest/') && !newUrl.includes('#')) {
+                    console.log('Navigating away from contest pages, auto-exiting');
+                    exitContest('Navigation away from contest');
+                }
+            }
+            return originalPushState.apply(history, arguments);
+        };
+        
+        history.replaceState = function() {
+            console.log('History replaceState detected, args:', arguments);
+            if (!window.dmojContestMode.hasExitedContest) {
+                var newUrl = arguments[2];
+                if (newUrl && !newUrl.includes('/contest/') && !newUrl.includes('#')) {
+                    console.log('Navigating away from contest pages, auto-exiting');
+                    exitContest('Navigation away from contest');
+                }
+            }
+            return originalReplaceState.apply(history, arguments);
+        };
+        
+        console.log('Contest monitoring initialized successfully');
+    }
+    
+    // Exit contest function
+    function exitContest(reason) {
+        if (window.dmojContestMode.hasExitedContest) {
+            console.log('Contest exit already in progress, ignoring');
+            return;
+        }
+        
+        console.log('Exiting contest, reason:', reason);
+        window.dmojContestMode.hasExitedContest = true;
+        
+        // Try to submit leave form
+        submitLeaveForm().then(function(success) {
+            if (success) {
+                console.log('Contest leave form submitted successfully');
+            } else {
+                console.log('Leave form submission failed, trying direct navigation');
+                // Fallback: direct navigation
+                window.location.href = '/contest/' + window.dmojContestMode.contestKey + '/leave';
+            }
+        });
+    }
+    
+    // Submit leave form
+    function submitLeaveForm() {
+        return new Promise(function(resolve) {
+            console.log('Attempting to submit leave form');
+            
+            // Try multiple selectors to find the leave form
+            var leaveForm = document.querySelector('form[action*="contest_leave"]') ||
+                           document.querySelector('form[action*="/leave"]') ||
+                           document.querySelector('.contest-join-pseudotab form') ||
+                           document.querySelector('form[action*="' + window.dmojContestMode.contestKey + '/leave"]');
+            
+            if (leaveForm) {
+                console.log('Found leave form, submitting:', leaveForm);
+                
+                // Ensure CSRF token is present
+                var csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+                if (csrfToken && !leaveForm.querySelector('[name=csrfmiddlewaretoken]')) {
+                    var csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken.value;
+                    leaveForm.appendChild(csrfInput);
+                }
+                
+                // Submit the form
+                try {
+                    leaveForm.submit();
+                    resolve(true);
+                } catch (e) {
+                    console.error('Error submitting leave form:', e);
+                    resolve(false);
+                }
+            } else {
+                console.log('No leave form found on current page');
+                resolve(false);
+            }
+        });
+    }
+    
+    // Initialize when DOM is ready
+    function initialize() {
+        console.log('DOM ready, checking if fullscreen overlay should be shown');
+        
+        if (shouldShowFullscreenOverlay()) {
+            console.log('Showing fullscreen overlay');
+            showFullscreenOverlay();
+        } else {
+            console.log('Fullscreen overlay not needed, initializing monitoring');
+            initializeContestMonitoring();
+        }
+        
+        // Add leave button confirmation to any existing leave buttons
+        setTimeout(function() {
+            document.querySelectorAll('.contest-leave-btn, .leaving-forever, form[action*="contest_leave"] input[type="submit"]').forEach(function(button) {
+                console.log('Found leave button, adding confirmation:', button);
+                button.addEventListener('click', function(e) {
+                    console.log('Leave button clicked');
+                    if (!window.dmojContestMode.hasExitedContest && !confirm("{{ _('Are you sure you want to exit the contest? You will not be able to rejoin.') }}")) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    window.dmojContestMode.hasExitedContest = true;
+                });
+            });
+        }, 1000);
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+        initialize();
+    }
+    
+})();
+</script>

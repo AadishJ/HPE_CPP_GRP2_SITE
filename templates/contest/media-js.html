@@ -19,11 +19,30 @@
             }
             
             if(confirm(confirmMessage)) {
-                console.log('User confirmed join, setting cookie flag');
-                // Use a cookie instead of localStorage for better reliability
-                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300";
-                console.log('Cookie flag set, submitting form');
-                form.submit();
+                console.log('User confirmed join, setting cookie flags');
+                
+                // Get contest key from form action
+                var contestKey = null;
+                var action = form.attr('action');
+                if (action) {
+                    var match = action.match(/\/contest\/([^\/]+)\/join/);
+                    if (match) {
+                        contestKey = match[1];
+                    }
+                }
+                
+                // Set cookies for contest join detection
+                document.cookie = "dmoj_joining_contest=true; path=/; max-age=600; SameSite=Lax";
+                if (contestKey) {
+                    document.cookie = "dmoj_contest_just_joined_" + contestKey + "=true; path=/; max-age=600; SameSite=Lax";
+                }
+                
+                console.log('Cookie flags set for contest:', contestKey);
+                
+                // Add a small delay to ensure cookies are set before redirect
+                setTimeout(function() {
+                    form.submit();
+                }, 150);
             }
             
             return false; // Prevent default form submission
@@ -36,10 +55,28 @@
             if(confirm({{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
                 {{ _('Joining this contest will leave %(contest)s.', contest=request.participation.contest.name)|htmltojs }})) {
                 
-                console.log('Confirmed contest switch, setting cookie flag');
+                console.log('Confirmed contest switch, setting cookie flags');
                 var form = $(this).closest('form');
-                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300";
-                form.submit();
+                
+                // Get contest key from form action
+                var contestKey = null;
+                var action = form.attr('action');
+                if (action) {
+                    var match = action.match(/\/contest\/([^\/]+)\/join/);
+                    if (match) {
+                        contestKey = match[1];
+                    }
+                }
+                
+                // Set cookies for contest join detection
+                document.cookie = "dmoj_joining_contest=true; path=/; max-age=600; SameSite=Lax";
+                if (contestKey) {
+                    document.cookie = "dmoj_contest_just_joined_" + contestKey + "=true; path=/; max-age=600; SameSite=Lax";
+                }
+                
+                setTimeout(function() {
+                    form.submit();
+                }, 150);
             }
             
             return false;

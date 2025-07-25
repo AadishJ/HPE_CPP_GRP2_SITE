@@ -13,7 +13,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import BooleanField, Case, Count, F, FloatField, IntegerField, Max, Min, Q, Sum, Value, When
 from django.db.models.expressions import CombinedExpression, Exists, OuterRef
-from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import date as date_filter
 from django.urls import reverse
@@ -451,7 +451,11 @@ class ContestJoin(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
         profile.save()
         contest._updating_stats_only = True
         contest.update_user_count()
-        return HttpResponseRedirect(reverse('problem_list'))
+        
+        # Create response and set contest joined cookie for fullscreen overlay
+        response = HttpResponseRedirect(reverse('contest_view', args=[contest.key]))
+        response.set_cookie(f'dmoj_contest_just_joined_{contest.key}', 'true', max_age=600, samesite='Lax')
+        return response
 
     def ask_for_access_code(self, form=None):
         contest = self.object
@@ -470,6 +474,10 @@ class ContestJoin(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
 
 
 class ContestLeave(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
+    def get(self, request, *args, **kwargs):
+        # Handle GET requests by redirecting to POST
+        return self.post(request, *args, **kwargs)
+    
     def post(self, request, *args, **kwargs):
         contest = self.get_object()
 
@@ -483,7 +491,17 @@ class ContestLeave(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
         participation.has_exited = True
         participation.save(update_fields=['has_exited'])
 
+        # Log the contest exit for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f'User {profile.user.username} exited contest {contest.key} via {request.method}')
+
         profile.remove_contest()
+        
+        # Return different response based on request type
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': True, 'message': 'Contest left successfully'})
+        
         return HttpResponseRedirect(reverse('contest_view', args=(contest.key,)))
 
 
