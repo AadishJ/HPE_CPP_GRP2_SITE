@@ -262,9 +262,26 @@
             if (success) {
                 console.log('Contest leave form submitted successfully');
             } else {
-                console.log('Leave form submission failed, trying direct navigation');
-                // Fallback: direct navigation
-                window.location.href = '/contest/' + window.dmojContestMode.contestKey + '/leave';
+                console.log('Leave form submission failed, creating temporary form');
+                // Fallback: create temporary POST form
+                var tempForm = document.createElement('form');
+                tempForm.method = 'POST';
+                tempForm.action = '/contest/' + window.dmojContestMode.contestKey + '/leave';
+                tempForm.style.display = 'none';
+                
+                // Add CSRF token
+                var csrfToken = getCookie('csrftoken');
+                if (csrfToken) {
+                    var csrfInput = document.createElement('input');
+                    csrfInput.type = 'hidden';
+                    csrfInput.name = 'csrfmiddlewaretoken';
+                    csrfInput.value = csrfToken;
+                    tempForm.appendChild(csrfInput);
+                }
+                
+                document.body.appendChild(tempForm);
+                console.log('Submitting temporary form to:', tempForm.action);
+                tempForm.submit();
             }
         });
     }
