@@ -2,13 +2,14 @@
 <script type="text/javascript">
 (function() {
     'use strict';
-    
+
     // Contest mode state - available globally
     window.dmojContestMode = window.dmojContestMode || {
         inContest: {{ 'true' if request.user.is_authenticated and request.profile.current_contest and not request.participation.spectate else 'false' }},
         contestKey: {{ request.profile.current_contest.contest.key|escapejs if request.user.is_authenticated and request.profile.current_contest else 'null' }},
         hasExitedContest: false,
-        fullscreenEnabled: false,
+        tabSwitchCount: null, // Will be loaded from localStorage
+        maxTabSwitches: 3,
         initialized: false
     };
     
@@ -38,55 +39,78 @@
         document.cookie = name + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     }
     
-    // Check if we need to show fullscreen overlay
-    function shouldShowFullscreenOverlay() {
-        var joinFlag = getCookie('dmoj_joining_contest');
-        var contestJustJoined = getCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
-        var fullscreenShown = getCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey);
-        
-        return (joinFlag === 'true' || contestJustJoined === 'true' || !fullscreenShown);
+    // Tab switch persistence functions
+    function getStoredTabSwitchCount() {
+        var storageKey = 'dmoj_tab_switch_count_' + window.dmojContestMode.contestKey;
+        var storedCount = localStorage.getItem(storageKey);
+        return storedCount ? parseInt(storedCount, 10) : 0;
     }
     
-    // Create and show fullscreen overlay
-    function showFullscreenOverlay() {
-        console.log('Creating fullscreen overlay');
+    function storeTabSwitchCount(count) {
+        var storageKey = 'dmoj_tab_switch_count_' + window.dmojContestMode.contestKey;
+        localStorage.setItem(storageKey, count.toString());
+    }
+    
+    function clearStoredTabSwitchCount() {
+        var storageKey = 'dmoj_tab_switch_count_' + window.dmojContestMode.contestKey;
+        console.log('Clearing stored tab switch count for key:', storageKey);
+        localStorage.removeItem(storageKey);
+    }
+    
+    // Load stored tab switch count on initialization
+    if (window.dmojContestMode.tabSwitchCount === null) {
+        window.dmojContestMode.tabSwitchCount = getStoredTabSwitchCount();
+        console.log('Initial load of tab switch count:', window.dmojContestMode.tabSwitchCount);
+    }
+    
+    // Check if we need to show contest overlay
+    function shouldShowContestOverlay() {
+        var joinFlag = getCookie('dmoj_joining_contest');
+        var contestJustJoined = getCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
+        var overlayShown = getCookie('dmoj_contest_overlay_shown_' + window.dmojContestMode.contestKey);
+        
+        return (joinFlag === 'true' || contestJustJoined === 'true' || !overlayShown);
+    }
+    
+    // Create and show contest overlay
+    function showContestOverlay() {
+        console.log('Creating contest overlay');
         
         // Remove any existing overlay
-        var existingOverlay = document.getElementById('contest-fullscreen-overlay');
+        var existingOverlay = document.getElementById('contest-mode-overlay');
         if (existingOverlay) {
             document.body.removeChild(existingOverlay);
         }
         
         var overlay = document.createElement('div');
-        overlay.id = 'contest-fullscreen-overlay';
-        overlay.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.95);
-            z-index: 99999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-            text-align: center;
-            cursor: pointer;
-            font-family: Arial, sans-serif;
-        `;
+        overlay.id = 'contest-mode-overlay';
+        overlay.style.cssText = 
+            'position: fixed;' +
+            'top: 0;' +
+            'left: 0;' +
+            'width: 100%;' +
+            'height: 100%;' +
+            'background-color: rgba(0, 0, 0, 0.95);' +
+            'z-index: 99999;' +
+            'display: flex;' +
+            'flex-direction: column;' +
+            'justify-content: center;' +
+            'align-items: center;' +
+            'color: white;' +
+            'text-align: center;' +
+            'cursor: pointer;' +
+            'font-family: Arial, sans-serif;';
         
         var heading = document.createElement('h1');
         heading.textContent = '{{ _("Contest Mode Activated") }}';
         heading.style.cssText = 'margin-bottom: 20px; font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.8);';
         
         var instructions = document.createElement('p');
-        instructions.textContent = '{{ _("Click anywhere to enter fullscreen contest mode") }}';
+        instructions.textContent = '{{ _("Click anywhere to start contest monitoring") }}';
         instructions.style.cssText = 'font-size: 18px; margin-bottom: 30px; max-width: 600px; line-height: 1.5;';
         
         var warning = document.createElement('p');
-        warning.textContent = '{{ _("⚠️ Exiting fullscreen or switching tabs will immediately remove you from the contest") }}';
+        warning.textContent = '{{ _("⚠️ Switching tabs more than 3 times will remove you from the contest") }}';
         warning.style.cssText = 'font-size: 16px; color: #ff6b6b; font-weight: bold; max-width: 600px; line-height: 1.5;';
         
         var contestInfo = document.createElement('p');
@@ -102,149 +126,549 @@
         
         // Handle overlay click
         overlay.addEventListener('click', function() {
-            console.log('User clicked overlay, requesting fullscreen');
-            requestFullscreen().then(function() {
-                console.log('Fullscreen entered successfully');
-                window.dmojContestMode.fullscreenEnabled = true;
-                
-                // Mark that fullscreen overlay has been shown for this contest
-                setCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey, 'true', 3600);
-                
-                // Clean up cookies
-                deleteCookie('dmoj_joining_contest');
-                deleteCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
-                
-                // Remove overlay
-                setTimeout(function() {
-                    if (document.body.contains(overlay)) {
-                        document.body.removeChild(overlay);
-                    }
-                }, 500);
-                
-                // Initialize contest monitoring
-                initializeContestMonitoring();
-                
-            }).catch(function(err) {
-                console.error('Failed to enter fullscreen:', err);
-                // Still remove overlay and initialize monitoring
-                if (document.body.contains(overlay)) {
-                    document.body.removeChild(overlay);
-                }
-                // Set fullscreen as enabled even if it failed, to prevent repeated attempts
-                setCookie('dmoj_fullscreen_shown_' + window.dmojContestMode.contestKey, 'true', 3600);
-                initializeContestMonitoring();
-            });
+            console.log('User clicked overlay, starting contest monitoring');
+            
+            // Mark that contest overlay has been shown for this contest
+            setCookie('dmoj_contest_overlay_shown_' + window.dmojContestMode.contestKey, 'true', 3600);
+            
+            // Clean up cookies
+            deleteCookie('dmoj_joining_contest');
+            deleteCookie('dmoj_contest_just_joined_' + window.dmojContestMode.contestKey);
+            
+            // Remove overlay
+            if (document.body.contains(overlay)) {
+                document.body.removeChild(overlay);
+            }
+            
+            // Initialize contest monitoring
+            initializeContestMonitoring();
         });
     }
     
-    // Request fullscreen with cross-browser support
-    function requestFullscreen() {
-        console.log('Attempting to enter fullscreen');
-        try {
-            var docEl = document.documentElement;
-            if (docEl.requestFullscreen) {
-                return docEl.requestFullscreen();
-            } else if (docEl.webkitRequestFullscreen) {
-                docEl.webkitRequestFullscreen();
-                return Promise.resolve();
-            } else if (docEl.msRequestFullscreen) {
-                docEl.msRequestFullscreen();
-                return Promise.resolve();
-            } else if (docEl.mozRequestFullScreen) {
-                docEl.mozRequestFullScreen();
-                return Promise.resolve();
-            } else {
-                console.log('No fullscreen API available');
-                return Promise.reject('No fullscreen API');
-            }
-        } catch (e) {
-            console.error('Error requesting fullscreen:', e);
-            return Promise.reject(e);
+    // Create tab switch counter display
+    function createTabSwitchCounter() {
+        // Remove any existing counter first
+        var existingCounter = document.getElementById('tab-switch-counter');
+        if (existingCounter) {
+            document.body.removeChild(existingCounter);
+        }
+        
+        var counter = document.createElement('div');
+        counter.id = 'tab-switch-counter';
+        counter.style.cssText = 
+            'position: fixed;' +
+            'top: 10px;' +
+            'right: 10px;' +
+            'background-color: rgba(255, 107, 107, 0.9);' +
+            'color: white;' +
+            'padding: 10px 15px;' +
+            'border-radius: 5px;' +
+            'font-family: Arial, sans-serif;' +
+            'font-size: 14px;' +
+            'font-weight: bold;' +
+            'z-index: 10000;' +
+            'box-shadow: 0 2px 8px rgba(0,0,0,0.3);' +
+            'border: 2px solid #ff4757;';
+        
+        // Update display with current stored count
+        updateTabSwitchDisplay(counter);
+        document.body.appendChild(counter);
+        console.log('Tab switch counter created and displayed with count:', window.dmojContestMode.tabSwitchCount);
+        return counter;
+    }
+    
+    // Update tab switch counter display
+    function updateTabSwitchDisplay(counter) {
+        var remaining = window.dmojContestMode.maxTabSwitches - window.dmojContestMode.tabSwitchCount;
+        counter.innerHTML = 
+            '<div>{{ _("Tab Switches") }}: ' + window.dmojContestMode.tabSwitchCount + '/' + window.dmojContestMode.maxTabSwitches + '</div>' +
+            '<div style="font-size: 12px; margin-top: 2px;">' + (remaining > 0 ? remaining + ' {{ _("remaining") }}' : '{{ _("LIMIT REACHED!") }}') + '</div>';
+        
+        // Change color based on remaining switches
+        if (remaining <= 1) {
+            counter.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+            counter.style.animation = 'pulse 1s infinite';
+        } else if (remaining <= 2) {
+            counter.style.backgroundColor = 'rgba(255, 165, 0, 0.9)';
         }
     }
     
-    // Initialize contest monitoring (fullscreen exit, tab switching, etc.)
+    // Initialize contest monitoring (tab switching, etc.)
     function initializeContestMonitoring() {
-        console.log('Initializing contest monitoring');
+        console.log('Initializing contest monitoring with comprehensive multi-method detection');
         
-        // Prevent ESC key from exiting fullscreen
-        document.addEventListener('keydown', function(e) {
-            if ((e.key === 'Escape' || e.keyCode === 27) && !window.dmojContestMode.hasExitedContest) {
-                console.log('ESC key pressed, preventing default behavior');
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
+        // Get existing tab counter or create one if it doesn't exist
+        var tabCounter = document.getElementById('tab-switch-counter');
+        if (!tabCounter) {
+            console.log('No existing tab counter found, creating one');
+            tabCounter = createTabSwitchCounter();
+        } else {
+            console.log('Using existing tab counter, updating display with stored count:', window.dmojContestMode.tabSwitchCount);
+            updateTabSwitchDisplay(tabCounter);
+        }
+        
+        // Comprehensive state tracking for reliable detection
+        var detectionState = {
+            // Current states
+            isWindowFocused: document.hasFocus(),
+            isDocumentVisible: !document.hidden,
+            isUserActive: true,
+            
+            // Timestamps for timing analysis
+            lastFocusTime: Date.now(),
+            lastBlurTime: 0,
+            lastVisibilityChangeTime: Date.now(),
+            lastUserActivityTime: Date.now(),
+            lastSwitchTime: 0,
+            
+            // Detection flags
+            focusLossPending: false,
+            visibilityLossPending: false,
+            internalNavigationPending: false,
+            switchCooldownActive: false,
+            
+            // Validation counters
+            consecutiveFocusLosses: 0,
+            missedDetectionAttempts: 0,
+            
+            // Browser-specific handling
+            isChrome: navigator.userAgent.indexOf('Chrome') > -1,
+            isFirefox: navigator.userAgent.indexOf('Firefox') > -1,
+            isSafari: navigator.userAgent.indexOf('Safari') > -1 && navigator.userAgent.indexOf('Chrome') === -1
+        };
+        
+        // Helper function to log detailed detection info
+        function logDetection(method, decision, details) {
+            console.log(`[${method}] ${decision}:`, details);
+        }
+        
+        // Helper function to check if current event is internal navigation
+        function isInternalNavigation() {
+            var now = Date.now();
+            var pageTransition = sessionStorage.getItem('dmoj.pageTransition') === 'true';
+            var transitionTime = sessionStorage.getItem('dmoj.transitionTime');
+            var isQuickTransition = transitionTime && (now - parseInt(transitionTime)) < 1000;
+            
+            return (pageTransition || detectionState.internalNavigationPending || isQuickTransition);
+        }
+        
+        // Helper function to safely increment tab switch count with comprehensive validation
+        function incrementTabSwitchCount(detectionMethod, details) {
+            if (window.dmojContestMode.hasExitedContest) {
+                logDetection(detectionMethod, 'IGNORED - Contest exited', details);
                 return false;
             }
-        }, true);
+            
+            var now = Date.now();
+            var timeSinceLastSwitch = now - detectionState.lastSwitchTime;
+            
+            // Prevent duplicate counting within reasonable timeframe
+            if (detectionState.switchCooldownActive || timeSinceLastSwitch < 1500) {
+                logDetection(detectionMethod, 'IGNORED - Cooldown active', {
+                    ...details,
+                    timeSinceLastSwitch: timeSinceLastSwitch,
+                    cooldownActive: detectionState.switchCooldownActive
+                });
+                return false;
+            }
+            
+            // Check for internal navigation
+            if (isInternalNavigation()) {
+                logDetection(detectionMethod, 'IGNORED - Internal navigation', details);
+                return false;
+            }
+            
+            // Valid switch detected - increment counter
+            window.dmojContestMode.tabSwitchCount++;
+            detectionState.lastSwitchTime = now;
+            detectionState.switchCooldownActive = true;
+            
+            logDetection(detectionMethod, 'TAB SWITCH COUNTED', {
+                ...details,
+                newCount: window.dmojContestMode.tabSwitchCount,
+                maxSwitches: window.dmojContestMode.maxTabSwitches
+            });
+            
+            // Store the count persistently
+            storeTabSwitchCount(window.dmojContestMode.tabSwitchCount);
+            
+            // Update counter display
+            updateTabSwitchDisplay(tabCounter);
+            
+            // Check if limit reached
+            if (window.dmojContestMode.tabSwitchCount >= window.dmojContestMode.maxTabSwitches) {
+                console.log('Tab switch limit reached, auto-exiting contest');
+                exitContest('Tab switch limit exceeded (' + window.dmojContestMode.tabSwitchCount + ' switches)');
+                return true;
+            }
+            
+            // Reset cooldown after appropriate time
+            setTimeout(function() {
+                detectionState.switchCooldownActive = false;
+                logDetection('COOLDOWN', 'Reset', { method: detectionMethod });
+            }, 1500);
+            
+            return true;
+        }
         
-        // Monitor fullscreen changes
-        function handleFullscreenChange() {
-            console.log('Fullscreen change detected');
-            var isFullscreen = document.fullscreenElement || 
-                             document.webkitFullscreenElement || 
-                             document.msFullscreenElement ||
-                             document.mozFullScreenElement;
+        // Method 1: Detect internal navigation via beforeunload
+        window.addEventListener('beforeunload', function(e) {
+            console.log('Page unloading - marking as internal navigation');
+            detectionState.internalNavigationPending = true;
+            sessionStorage.setItem('dmoj.pageTransition', 'true');
+            sessionStorage.setItem('dmoj.transitionTime', Date.now().toString());
+        });
+        
+        // Method 2: Focus/Blur detection - PRIMARY METHOD for window switching
+        window.addEventListener('focus', function(e) {
+            var now = Date.now();
+            var timeSinceBlur = detectionState.lastBlurTime > 0 ? now - detectionState.lastBlurTime : 0;
+            var timeSinceFocus = now - detectionState.lastFocusTime;
             
-            console.log('Current fullscreen element:', isFullscreen);
+            detectionState.lastFocusTime = now;
+            detectionState.lastUserActivityTime = now;
             
-            if (!isFullscreen && !window.dmojContestMode.hasExitedContest && window.dmojContestMode.fullscreenEnabled) {
-                console.log('Fullscreen exited unexpectedly, auto-exiting contest');
-                exitContest('Fullscreen mode was exited');
+            logDetection('FOCUS', 'Window gained focus', {
+                timeSinceBlur: timeSinceBlur,
+                timeSinceFocus: timeSinceFocus,
+                focusLossPending: detectionState.focusLossPending,
+                previouslyFocused: detectionState.isWindowFocused
+            });
+            
+            // If we had a pending focus loss, this confirms a genuine switch
+            if (detectionState.focusLossPending && !detectionState.isWindowFocused) {
+                incrementTabSwitchCount('FOCUS_REGAIN', {
+                    blurDuration: timeSinceBlur,
+                    previousState: 'blurred'
+                });
+            }
+            
+            // Update state
+            detectionState.isWindowFocused = true;
+            detectionState.focusLossPending = false;
+            detectionState.consecutiveFocusLosses = 0;
+            
+            // Clear navigation flags when focus returns
+            sessionStorage.removeItem('dmoj.pageTransition');
+            sessionStorage.removeItem('dmoj.transitionTime');
+            detectionState.internalNavigationPending = false;
+        });
+        
+        window.addEventListener('blur', function(e) {
+            var now = Date.now();
+            detectionState.lastBlurTime = now;
+            detectionState.consecutiveFocusLosses++;
+            
+            logDetection('BLUR', 'Window lost focus', {
+                consecutiveLosses: detectionState.consecutiveFocusLosses,
+                wasInternalNav: isInternalNavigation()
+            });
+            
+            // Mark focus loss as pending (will be confirmed on focus regain)
+            detectionState.isWindowFocused = false;
+            detectionState.focusLossPending = true;
+        });
+        
+        // Method 3: Visibility change detection - BACKUP METHOD
+        document.addEventListener('visibilitychange', function(e) {
+            var now = Date.now();
+            var timeSinceLastVisibility = now - detectionState.lastVisibilityChangeTime;
+            detectionState.lastVisibilityChangeTime = now;
+            
+            logDetection('VISIBILITY', 'Visibility changed', {
+                hidden: document.hidden,
+                timeSinceLastChange: timeSinceLastVisibility,
+                focusState: detectionState.isWindowFocused,
+                visibilityLossPending: detectionState.visibilityLossPending
+            });
+            
+            if (document.hidden) {
+                // Document became hidden
+                detectionState.isDocumentVisible = false;
+                detectionState.visibilityLossPending = true;
+                
+                // If focus events didn't catch this, count it as a switch
+                if (!detectionState.focusLossPending && !isInternalNavigation()) {
+                    incrementTabSwitchCount('VISIBILITY_HIDDEN', {
+                        focusState: detectionState.isWindowFocused,
+                        method: 'visibility-only'
+                    });
+                }
+            } else {
+                // Document became visible
+                detectionState.isDocumentVisible = true;
+                
+                // If we had pending visibility loss, this is a confirmed switch
+                if (detectionState.visibilityLossPending && !isInternalNavigation()) {
+                    incrementTabSwitchCount('VISIBILITY_REGAIN', {
+                        hiddenDuration: timeSinceLastVisibility,
+                        method: 'visibility-return'
+                    });
+                }
+                
+                detectionState.visibilityLossPending = false;
+                
+                // Clear navigation flags
+                sessionStorage.removeItem('dmoj.pageTransition');
+                sessionStorage.removeItem('dmoj.transitionTime');
+                detectionState.internalNavigationPending = false;
+            }
+        });
+        
+        // Method 4: Page lifecycle events for mobile and background detection
+        if ('onfreeze' in document) {
+            document.addEventListener('freeze', function(e) {
+                logDetection('FREEZE', 'Page frozen (mobile background)', {});
+                if (!isInternalNavigation()) {
+                    incrementTabSwitchCount('PAGE_FREEZE', {
+                        mobile: true,
+                        visibility: detectionState.isDocumentVisible
+                    });
+                }
+            });
+        }
+        
+        if ('onresume' in document) {
+            document.addEventListener('resume', function(e) {
+                logDetection('RESUME', 'Page resumed', {});
+                detectionState.lastUserActivityTime = Date.now();
+            });
+        }
+        
+        // Method 5: Mouse activity monitoring - catches Alt+Tab and task switching
+        var mouseTracker = {
+            lastPosition: { x: 0, y: 0 },
+            lastMoveTime: Date.now(),
+            leftWindow: false
+        };
+        
+        document.addEventListener('mousemove', function(e) {
+            var now = Date.now();
+            mouseTracker.lastPosition = { x: e.clientX, y: e.clientY };
+            mouseTracker.lastMoveTime = now;
+            detectionState.lastUserActivityTime = now;
+            mouseTracker.leftWindow = false;
+        });
+        
+        document.addEventListener('mouseleave', function(e) {
+            // Check if mouse actually left the window boundaries
+            var leftWindow = (e.clientY < 0 || e.clientX < 0 || 
+                             e.clientX > window.innerWidth || e.clientY > window.innerHeight);
+            
+            if (leftWindow) {
+                mouseTracker.leftWindow = true;
+                logDetection('MOUSE', 'Mouse left window', { 
+                    coordinates: { x: e.clientX, y: e.clientY },
+                    windowSize: { w: window.innerWidth, h: window.innerHeight }
+                });
+                
+                // Check for focus loss shortly after mouse leave
+                setTimeout(function() {
+                    if (!detectionState.isWindowFocused && mouseTracker.leftWindow) {
+                        logDetection('MOUSE', 'Mouse leave confirmed switch', {});
+                    }
+                }, 100);
+            }
+        });
+        
+        // Method 6: Keyboard shortcuts detection
+        document.addEventListener('keydown', function(e) {
+            detectionState.lastUserActivityTime = Date.now();
+            
+            // Alt+Tab detection
+            if (e.altKey && e.key === 'Tab') {
+                logDetection('KEYBOARD', 'Alt+Tab detected', {});
+                detectionState.focusLossPending = true;
+                e.preventDefault(); // Try to prevent the switch, but it might still happen
+            }
+            
+            // Windows/Meta key detection
+            if (e.key === 'Meta' || e.metaKey) {
+                logDetection('KEYBOARD', 'Meta/Windows key detected', {});
+                detectionState.focusLossPending = true;
+            }
+            
+            // Ctrl+Tab (browser tab switching)
+            if (e.ctrlKey && e.key === 'Tab') {
+                logDetection('KEYBOARD', 'Ctrl+Tab detected', {});
+                detectionState.focusLossPending = true;
+            }
+        });
+        
+        // Method 7: User activity monitoring
+        var activityEvents = ['mousedown', 'mouseup', 'keydown', 'keyup', 'scroll', 'touchstart', 'touchend'];
+        activityEvents.forEach(function(eventType) {
+            document.addEventListener(eventType, function() {
+                detectionState.lastUserActivityTime = Date.now();
+                detectionState.isUserActive = true;
+            }, { passive: true });
+        });
+        
+        // Method 8: Comprehensive state validation and missed detection recovery
+        setInterval(function() {
+            var now = Date.now();
+            var currentFocus = document.hasFocus();
+            var currentVisibility = !document.hidden;
+            var timeSinceActivity = now - detectionState.lastUserActivityTime;
+            
+            // Detect missed focus changes
+            if (currentFocus !== detectionState.isWindowFocused) {
+                logDetection('VALIDATION', 'Focus state mismatch detected', {
+                    tracked: detectionState.isWindowFocused,
+                    actual: currentFocus,
+                    timeSinceActivity: timeSinceActivity
+                });
+                
+                if (!currentFocus && !isInternalNavigation()) {
+                    // Lost focus but missed the blur event
+                    incrementTabSwitchCount('MISSED_FOCUS_LOSS', {
+                        timeSinceActivity: timeSinceActivity,
+                        detection: 'validation-loop'
+                    });
+                }
+                
+                detectionState.isWindowFocused = currentFocus;
+                if (currentFocus) {
+                    detectionState.focusLossPending = false;
+                    detectionState.consecutiveFocusLosses = 0;
+                }
+            }
+            
+            // Detect missed visibility changes
+            if (currentVisibility !== detectionState.isDocumentVisible) {
+                logDetection('VALIDATION', 'Visibility state mismatch detected', {
+                    tracked: detectionState.isDocumentVisible,
+                    actual: currentVisibility,
+                    timeSinceActivity: timeSinceActivity
+                });
+                
+                if (!currentVisibility && !isInternalNavigation()) {
+                    // Document hidden but missed the visibilitychange event
+                    incrementTabSwitchCount('MISSED_VISIBILITY_CHANGE', {
+                        timeSinceActivity: timeSinceActivity,
+                        detection: 'validation-loop'
+                    });
+                }
+                
+                detectionState.isDocumentVisible = currentVisibility;
+                if (currentVisibility) {
+                    detectionState.visibilityLossPending = false;
+                }
+            }
+            
+            // Detect suspicious inactivity patterns
+            if (timeSinceActivity > 60000) { // 1 minute of inactivity
+                if (currentFocus && currentVisibility) {
+                    // Long inactivity but page appears active - possible detection bypass
+                    logDetection('VALIDATION', 'Suspicious inactivity pattern', {
+                        timeSinceActivity: timeSinceActivity,
+                        focus: currentFocus,
+                        visibility: currentVisibility
+                    });
+                    
+                    // Reset activity to prevent false positives
+                    detectionState.lastUserActivityTime = now - 30000; // Backdate by 30 seconds
+                }
+            }
+            
+            // Check for pending focus/visibility losses that haven't been resolved
+            var maxPendingTime = 5000; // 5 seconds
+            if (detectionState.focusLossPending && (now - detectionState.lastBlurTime) > maxPendingTime) {
+                logDetection('VALIDATION', 'Resolving stale focus loss', {
+                    pendingTime: now - detectionState.lastBlurTime
+                });
+                if (!isInternalNavigation()) {
+                    incrementTabSwitchCount('STALE_FOCUS_LOSS', {
+                        pendingTime: now - detectionState.lastBlurTime
+                    });
+                }
+                detectionState.focusLossPending = false;
+            }
+            
+            if (detectionState.visibilityLossPending && (now - detectionState.lastVisibilityChangeTime) > maxPendingTime) {
+                logDetection('VALIDATION', 'Resolving stale visibility loss', {
+                    pendingTime: now - detectionState.lastVisibilityChangeTime
+                });
+                if (!isInternalNavigation()) {
+                    incrementTabSwitchCount('STALE_VISIBILITY_LOSS', {
+                        pendingTime: now - detectionState.lastVisibilityChangeTime
+                    });
+                }
+                detectionState.visibilityLossPending = false;
+            }
+            
+        }, 500); // Check every 500ms for high responsiveness
+        
+        // Method 9: Browser-specific additional detection
+        if (detectionState.isChrome) {
+            // Chrome-specific pagehide event
+            window.addEventListener('pagehide', function(e) {
+                logDetection('CHROME', 'Page hide event', { persisted: e.persisted });
+                if (!isInternalNavigation() && !e.persisted) {
+                    incrementTabSwitchCount('CHROME_PAGEHIDE', {
+                        persisted: e.persisted
+                    });
+                }
+            });
+        }
+        
+        if (detectionState.isFirefox) {
+            // Firefox-specific handling
+            window.addEventListener('mozvisibilitychange', function() {
+                logDetection('FIREFOX', 'Mozilla visibility change', { 
+                    hidden: document.mozHidden 
+                });
+            });
+        }
+        
+        // Method 10: Network connectivity changes (can indicate system switching)
+        if ('onLine' in navigator) {
+            window.addEventListener('online', function() {
+                logDetection('NETWORK', 'Came back online', {});
+                detectionState.lastUserActivityTime = Date.now();
+            });
+            
+            window.addEventListener('offline', function() {
+                logDetection('NETWORK', 'Went offline', {});
+                // Don't count this as a switch, but note it for context
+            });
+        }
+        
+        // Method 11: Performance observer for frame drops (can indicate tab switching)
+        if ('PerformanceObserver' in window) {
+            try {
+                var perfObserver = new PerformanceObserver(function(list) {
+                    var entries = list.getEntries();
+                    for (var i = 0; i < entries.length; i++) {
+                        var entry = entries[i];
+                        if (entry.entryType === 'measure' && entry.duration > 100) {
+                            // Significant frame drop detected
+                            logDetection('PERFORMANCE', 'Frame drop detected', {
+                                duration: entry.duration,
+                                name: entry.name
+                            });
+                        }
+                    }
+                });
+                perfObserver.observe({ entryTypes: ['measure', 'navigation'] });
+            } catch (e) {
+                // Performance Observer not supported or failed
+                console.log('Performance Observer not available');
             }
         }
         
-        document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-        document.addEventListener('msfullscreenchange', handleFullscreenChange);
-        
-        // Monitor tab/window visibility changes
-        document.addEventListener('visibilitychange', function() {
-            console.log('Visibility changed, document.hidden =', document.hidden);
-            if (document.hidden && !window.dmojContestMode.hasExitedContest) {
-                console.log('Tab/window switched, auto-exiting contest');
-                exitContest('Tab switching detected');
-            }
-        });
-        
-        // Monitor page unload
-        window.addEventListener('beforeunload', function(e) {
-            if (!window.dmojContestMode.hasExitedContest) {
-                console.log('Page navigation detected, auto-exiting contest');
-                exitContest('Page navigation detected');
-            }
-        });
-        
-        // Monitor history changes (for SPA-like navigation)
-        var originalPushState = history.pushState;
-        var originalReplaceState = history.replaceState;
-        
-        history.pushState = function() {
-            console.log('History pushState detected, args:', arguments);
-            if (!window.dmojContestMode.hasExitedContest) {
-                var newUrl = arguments[2];
-                if (newUrl && !newUrl.includes('/contest/') && !newUrl.includes('#')) {
-                    console.log('Navigating away from contest pages, auto-exiting');
-                    exitContest('Navigation away from contest');
-                }
-            }
-            return originalPushState.apply(history, arguments);
-        };
-        
-        history.replaceState = function() {
-            console.log('History replaceState detected, args:', arguments);
-            if (!window.dmojContestMode.hasExitedContest) {
-                var newUrl = arguments[2];
-                if (newUrl && !newUrl.includes('/contest/') && !newUrl.includes('#')) {
-                    console.log('Navigating away from contest pages, auto-exiting');
-                    exitContest('Navigation away from contest');
-                }
-            }
-            return originalReplaceState.apply(history, arguments);
-        };
-        
-        console.log('Contest monitoring initialized successfully');
+        console.log('Contest monitoring initialized with comprehensive detection:');
+        console.log('- Focus/Blur (primary)');
+        console.log('- Visibility changes (backup)');
+        console.log('- Page lifecycle events');
+        console.log('- Mouse tracking');
+        console.log('- Keyboard shortcuts');
+        console.log('- User activity monitoring');
+        console.log('- State validation (500ms intervals)');
+        console.log('- Browser-specific events');
+        console.log('- Network connectivity');
+        console.log('- Performance monitoring');
+        console.log('Detection state initialized:', detectionState);
     }
     
     // Exit contest function
@@ -254,8 +678,19 @@
             return;
         }
         
-        console.log('Exiting contest, reason:', reason);
+        console.log('ATTEMPTING TO EXIT CONTEST, reason:', reason);
+        console.log('Current tab switch count:', window.dmojContestMode.tabSwitchCount);
+        console.log('Stack trace:', new Error().stack);
+        
         window.dmojContestMode.hasExitedContest = true;
+        
+        // Only clear stored tab switch count if exiting due to tab switch limit
+        if (reason && reason.includes('Tab switch limit exceeded')) {
+            console.log('Clearing stored count due to tab switch limit');
+            clearStoredTabSwitchCount();
+        } else {
+            console.log('NOT clearing stored count - reason does not include tab switch limit');
+        }
         
         // Try to submit leave form
         submitLeaveForm().then(function(success) {
@@ -327,13 +762,37 @@
     
     // Initialize when DOM is ready
     function initialize() {
-        console.log('DOM ready, checking if fullscreen overlay should be shown');
+        console.log('DOM ready, checking contest state and cookies');
+
+        // IMPROVED LOGIC: Check if user just joined a new contest and clear old data
+        var joinFlag = getCookie('dmoj_joining_contest');
+        if (joinFlag === 'true') {
+            console.log('User is joining a new contest, clearing any previous tab switch count for key:', window.dmojContestMode.contestKey);
+            clearStoredTabSwitchCount();
+            // Delete the temporary join flag cookie
+            deleteCookie('dmoj_joining_contest');
+            console.log('Cleared join flag cookie and old count data');
+        }
         
-        if (shouldShowFullscreenOverlay()) {
-            console.log('Showing fullscreen overlay');
-            showFullscreenOverlay();
+        // Load stored tab switch count (will be 0 if we just cleared it above)
+        if (window.dmojContestMode.tabSwitchCount === null) {
+            window.dmojContestMode.tabSwitchCount = getStoredTabSwitchCount();
+            console.log('Loaded stored tab switch count on initialization:', window.dmojContestMode.tabSwitchCount);
         } else {
-            console.log('Fullscreen overlay not needed, initializing monitoring');
+            console.log('Tab switch count already loaded:', window.dmojContestMode.tabSwitchCount);
+        }
+        
+        // Always create tab counter first if we're in a contest (it will show current count)
+        if (window.dmojContestMode.inContest) {
+            console.log('User is in contest, creating tab counter immediately');
+            createTabSwitchCounter();
+        }
+        
+        if (shouldShowContestOverlay()) {
+            console.log('Showing contest overlay');
+            showContestOverlay();
+        } else {
+            console.log('Contest overlay not needed, initializing monitoring');
             initializeContestMonitoring();
         }
         
@@ -347,11 +806,23 @@
                         e.preventDefault();
                         return false;
                     }
+                    // User confirmed manual exit, clear the stored count
+                    clearStoredTabSwitchCount();
                     window.dmojContestMode.hasExitedContest = true;
                 });
             });
         }, 1000);
     }
+    
+    // Add CSS for pulse animation
+    var style = document.createElement('style');
+    style.textContent = 
+        '@keyframes pulse {' +
+        '0% { opacity: 1; }' +
+        '50% { opacity: 0.5; }' +
+        '100% { opacity: 1; }' +
+        '}';
+    document.head.appendChild(style);
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {

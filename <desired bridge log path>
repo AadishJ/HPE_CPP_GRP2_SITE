@@ -458,3 +458,25 @@ INFO 2025-08-05 08:25:30,219 daemon Exiting due to SIGINT
 INFO 2025-08-05 08:25:45,098 judge_handler Judge connected from: ('172.23.64.1', 53757)
 INFO 2025-08-05 08:25:45,102 judge_handler Judge authenticated: ('172.23.64.1', 53757) (firstjudge)
 INFO 2025-08-05 08:25:45,102 judge_list Minimum tier changed from None to 1
+INFO 2025-08-05 14:15:24,826 daemon Exiting due to SIGINT
+INFO 2025-08-05 14:15:41,123 judge_handler Judge connected from: ('172.23.64.1', 55192)
+INFO 2025-08-05 14:15:41,133 judge_handler Judge authenticated: ('172.23.64.1', 55192) (firstjudge)
+INFO 2025-08-05 14:15:41,133 judge_list Minimum tier changed from None to 1
+INFO 2025-08-05 16:44:46,541 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-05 16:44:46,635 judge_handler Judge disconnected from: ('172.23.64.1', 55192) with name firstjudge
+INFO 2025-08-05 16:45:49,887 judge_handler Judge connected from: ('172.23.64.1', 56048)
+INFO 2025-08-05 16:45:49,913 judge_handler Judge authenticated: ('172.23.64.1', 56048) (firstjudge)
+INFO 2025-08-05 16:45:49,914 judge_list Minimum tier changed from None to 1
+INFO 2025-08-05 16:46:10,798 daemon Exiting due to SIGINT
+INFO 2025-08-05 16:46:25,748 judge_handler Judge connected from: ('172.23.64.1', 56063)
+INFO 2025-08-05 16:46:25,753 judge_handler Judge authenticated: ('172.23.64.1', 56063) (firstjudge)
+INFO 2025-08-05 16:46:25,753 judge_list Minimum tier changed from None to 1
+INFO 2025-08-05 16:50:41,193 base_handler Socket timed out: ('172.23.64.1', 56063)
+WARNING 2025-08-05 16:50:57,070 judge_handler Judge seems dead: firstjudge: False
+INFO 2025-08-05 16:50:58,816 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-05 16:51:00,791 judge_handler Judge disconnected from: ('172.23.64.1', 56063) with name firstjudge
+INFO 2025-08-05 16:53:14,549 judge_handler Judge connected from: ('172.23.64.1', 56104)
+INFO 2025-08-05 16:53:14,577 judge_handler Judge disconnected from: ('172.23.64.1', 56104) with name None
+INFO 2025-08-05 16:53:25,063 judge_handler Judge connected from: ('172.23.64.1', 56110)
+INFO 2025-08-05 16:53:25,248 judge_handler Judge authenticated: ('172.23.64.1', 56110) (firstjudge)
+INFO 2025-08-05 16:53:25,248 judge_list Minimum tier changed from None to 1

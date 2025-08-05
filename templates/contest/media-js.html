@@ -19,10 +19,9 @@
             }
             
             if(confirm(confirmMessage)) {
-                console.log('User confirmed join, setting cookie flag');
-                // Use a cookie instead of localStorage for better reliability
-                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300";
-                console.log('Cookie flag set, submitting form');
+                console.log('User confirmed join, setting cookie flag and submitting form');
+                // Set cookie to indicate we're joining a contest (this will trigger counter reset)
+                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300; SameSite=Lax";
                 form.submit();
             }
             
@@ -36,9 +35,10 @@
             if(confirm({{ _('Are you sure you want to join?')|htmltojs }} + '\n' +
                 {{ _('Joining this contest will leave %(contest)s.', contest=request.participation.contest.name)|htmltojs }})) {
                 
-                console.log('Confirmed contest switch, setting cookie flag');
+                console.log('Confirmed contest switch, setting cookie flag and submitting');
                 var form = $(this).closest('form');
-                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300";
+                // Set cookie to indicate we're joining a contest (this will trigger counter reset)
+                document.cookie = "dmoj_joining_contest=true; path=/; max-age=300; SameSite=Lax";
                 form.submit();
             }
             
