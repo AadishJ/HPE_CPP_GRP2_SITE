@@ -6,6 +6,7 @@
 *.mo
 *~
 *.swp
+<desired bridge log path>
 dmoj/local_settings.py
 resources/ace-dmoj.css
 resources/dark
