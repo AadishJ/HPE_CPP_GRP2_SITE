@@ -12,7 +12,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import IntegrityError
 from django.db.models import BooleanField, Case, Count, F, FloatField, IntegerField, Max, Min, Q, Sum, Value, When
-from django.db.models.expressions import CombinedExpression
+from django.db.models.expressions import CombinedExpression, Exists, OuterRef
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
 from django.template.defaultfilters import date as date_filter
@@ -23,8 +23,8 @@ from django.utils.html import format_html
 from django.utils.safestring import mark_safe
 from django.utils.timezone import make_aware
 from django.utils.translation import gettext as _, gettext_lazy
-from django.views.generic import ListView, TemplateView
-from django.views.generic.detail import DetailView, SingleObjectMixin, View
+from django.views.generic import ListView, TemplateView, View
+from django.views.generic.detail import DetailView, SingleObjectMixin
 from django.views.generic.list import BaseListView
 from icalendar import Calendar as ICalendar, Event
 from reversion import revisions
@@ -80,17 +80,40 @@ class ContestList(QueryStringSortMixin, DiggPaginatorMixin, TitleMixin, ContestL
         return timezone.now()
 
     def _get_queryset(self):
-        return super().get_queryset().prefetch_related(
+        queryset = super().get_queryset().prefetch_related(
             'tags',
             'organizations',
             'authors',
             'curators',
             'testers',
             'spectators',
+            'classes',
+        )
+
+        profile = self.request.profile
+        if not profile:
+            return queryset
+
+        return queryset.annotate(
+            editor_or_tester=Exists(Contest.authors.through.objects.filter(contest=OuterRef('pk'), profile=profile)) |
+            Exists(Contest.curators.through.objects.filter(contest=OuterRef('pk'), profile=profile)) |
+            Exists(Contest.testers.through.objects.filter(contest=OuterRef('pk'), profile=profile)),
+            completed_contest=Exists(ContestParticipation.objects.filter(contest=OuterRef('pk'), user=profile,
+                                                                         virtual=ContestParticipation.LIVE)),
         )
 
     def get_queryset(self):
-        return self._get_queryset().order_by(self.order, 'key').filter(end_time__lt=self._now)
+        self.search_query = None
+        queryset = self._get_queryset().order_by(self.order, 'key').filter(end_time__lt=self._now)
+        if 'search' in self.request.GET:
+            self.search_query = search_query = ' '.join(self.request.GET.getlist('search')).strip()
+            if search_query:
+                queryset = queryset.filter(Q(key__icontains=search_query) | Q(name__icontains=search_query))
+        return queryset
+
+    def get_paginator(self, queryset, per_page, orphans=0, allow_empty_first_page=True, **kwargs):
+        return super().get_paginator(queryset, per_page, orphans, allow_empty_first_page,
+                                     count=self.get_queryset().values('id').count(), **kwargs)
 
     def get_context_data(self, **kwargs):
         context = super(ContestList, self).get_context_data(**kwargs)
@@ -125,6 +148,7 @@ class ContestList(QueryStringSortMixin, DiggPaginatorMixin, TitleMixin, ContestL
         context['now'] = self._now
         context['first_page_href'] = '.'
         context['page_suffix'] = '#past-contests'
+        context['search_query'] = self.search_query
         context.update(self.get_sort_context())
         context.update(self.get_sort_paginate_context())
         return context
@@ -266,8 +290,16 @@ class ContestDetail(ContestMixin, TitleMixin, CommentedDetailView):
         context['metadata'].update(
             **self.object.contest_problems
             .annotate(
-                partials_enabled=F('partial').bitand(F('problem__partial')),
-                pretests_enabled=F('is_pretested').bitand(F('contest__run_pretests_only')),
+                partials_enabled=Case(
+                    When(partial=True, problem__partial=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                ),
+                pretests_enabled=Case(
+                    When(is_pretested=True, contest__run_pretests_only=True, then=Value(True)),
+                    default=Value(False),
+                    output_field=BooleanField(),
+                ),
             )
             .aggregate(
                 has_partials=Sum('partials_enabled'),
@@ -276,6 +308,8 @@ class ContestDetail(ContestMixin, TitleMixin, CommentedDetailView):
                 problem_count=Count('id'),
             ),
         )
+        context['enable_comments'] = settings.DMOJ_ENABLE_COMMENTS
+        context['enable_social'] = settings.DMOJ_ENABLE_SOCIAL
         return context
 
 
@@ -360,6 +394,11 @@ class ContestJoin(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
                                    _('You have been declared persona non grata for this contest. '
                                      'You are permanently barred from joining this contest.'))
 
+        # Check if user has exited this contest before and cannot rejoin
+        if ContestParticipation.objects.filter(contest=contest, user=profile, has_exited=True).exists():
+            return generic_message(request, _('Cannot rejoin contest'),
+                                   _('You have previously exited this contest and cannot rejoin.'))
+
         requires_access_code = (not self.can_edit and contest.access_code and access_code != contest.access_code)
         if contest.ended:
             if requires_access_code:
@@ -438,6 +477,11 @@ class ContestLeave(LoginRequiredMixin, ContestMixin, SingleObjectMixin, View):
         if profile.current_contest is None or profile.current_contest.contest_id != contest.id:
             return generic_message(request, _('No such contest'),
                                    _('You are not in contest "%s".') % contest.key, 404)
+
+        # Mark the participation as exited so user cannot rejoin
+        participation = profile.current_contest
+        participation.has_exited = True
+        participation.save(update_fields=['has_exited'])
 
         profile.remove_contest()
         return HttpResponseRedirect(reverse('contest_view', args=(contest.key,)))
@@ -660,7 +704,8 @@ def base_contest_ranking_list(contest, problems, queryset):
 def contest_ranking_list(contest, problems):
     return base_contest_ranking_list(contest, problems, contest.users.filter(virtual=0)
                                      .prefetch_related('user__organizations')
-                                     .order_by('is_disqualified', '-score', 'cumtime', 'tiebreaker'))
+                                     .annotate(submission_cnt=Count('submission'))
+                                     .order_by('is_disqualified', '-score', 'cumtime', 'tiebreaker', '-submission_cnt'))
 
 
 def get_contest_ranking_list(request, contest, participation=None, ranking_list=contest_ranking_list,

@@ -2,16 +2,15 @@
 Django settings for dmoj project.
 
 For more information on this file, see
-https://docs.djangoproject.com/en/3.2/topics/settings/
+https://docs.djangoproject.com/en/4.2/topics/settings/
 
 For the full list of settings and their values, see
-https://docs.djangoproject.com/en/3.2/ref/settings/
+https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import datetime
 import os
-import tempfile
 
 from django.utils.translation import gettext_lazy as _
 from django_jinja.builtins import DEFAULT_EXTENSIONS
@@ -20,7 +19,7 @@ from jinja2 import select_autoescape
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
+# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = '5*9f5q57mqmlz2#f$x1h76&jxy#yortjl1v+l*6hd18$d*yx#0'
@@ -28,7 +27,8 @@ SECRET_KEY = '5*9f5q57mqmlz2#f$x1h76&jxy#yortjl1v+l*6hd18$d*yx#0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+#ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '172.24.12.193']
+
 
 SITE_ID = 1
 SITE_NAME = 'DMOJ'
@@ -49,8 +49,6 @@ DMOJ_PP_STEP = 0.95
 DMOJ_PP_ENTRIES = 100
 DMOJ_PP_BONUS_FUNCTION = lambda n: 300 * (1 - 0.997 ** n)  # noqa: E731
 
-NODEJS = '/usr/bin/node'
-EXIFTOOL = '/usr/bin/exiftool'
 ACE_URL = '//cdnjs.cloudflare.com/ajax/libs/ace/1.1.3'
 SELECT2_JS_URL = '//cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.min.js'
 SELECT2_CSS_URL = '//cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css'
@@ -59,7 +57,9 @@ DMOJ_CAMO_URL = None
 DMOJ_CAMO_KEY = None
 DMOJ_CAMO_HTTPS = False
 DMOJ_CAMO_EXCLUDE = ()
-DMOJ_PROBLEM_DATA_ROOT = None
+
+DMOJ_PROBLEM_DATA_ROOT = "/mnt/problems"
+
 DMOJ_PROBLEM_MIN_TIME_LIMIT = 0  # seconds
 DMOJ_PROBLEM_MAX_TIME_LIMIT = 60  # seconds
 DMOJ_PROBLEM_MIN_MEMORY_LIMIT = 0  # kilobytes
@@ -68,27 +68,39 @@ DMOJ_PROBLEM_MIN_PROBLEM_POINTS = 0
 DMOJ_PROBLEM_MIN_USER_POINTS_VOTE = 1  # when voting on problem, minimum point value user can select
 DMOJ_PROBLEM_MAX_USER_POINTS_VOTE = 50  # when voting on problem, maximum point value user can select
 DMOJ_PROBLEM_HOT_PROBLEM_COUNT = 7
+
 DMOJ_PROBLEM_STATEMENT_DISALLOWED_CHARACTERS = {'“', '”', '‘', '’', '−', 'ﬀ', 'ﬁ', 'ﬂ', 'ﬃ', 'ﬄ'}
 DMOJ_RATING_COLORS = True
 DMOJ_EMAIL_THROTTLING = (10, 60)
-DMOJ_STATS_LANGUAGE_THRESHOLD = 10
-DMOJ_SUBMISSIONS_REJUDGE_LIMIT = 10
+
 # Maximum number of submissions a single user can queue without the `spam_submission` permission
 DMOJ_SUBMISSION_LIMIT = 2
+DMOJ_SUBMISSIONS_REJUDGE_LIMIT = 10
+
 # Whether to allow users to view source code: 'all' | 'all-solved' | 'only-own'
 DMOJ_SUBMISSION_SOURCE_VISIBILITY = 'all-solved'
 DMOJ_BLOG_NEW_PROBLEM_COUNT = 7
 DMOJ_TOTP_TOLERANCE_HALF_MINUTES = 1
 DMOJ_SCRATCH_CODES_COUNT = 5
 DMOJ_USER_MAX_ORGANIZATION_COUNT = 3
+
 # Whether to allow users to download their data
 DMOJ_USER_DATA_DOWNLOAD = False
 DMOJ_USER_DATA_CACHE = ''
 DMOJ_USER_DATA_DOWNLOAD_RATELIMIT = datetime.timedelta(days=1)
+
 DMOJ_COMMENT_VOTE_HIDE_THRESHOLD = -5
 DMOJ_COMMENT_REPLY_TIMEFRAME = datetime.timedelta(days=365)
-DMOJ_PDF_PROBLEM_CACHE = ''
-DMOJ_PDF_PROBLEM_TEMP_DIR = tempfile.gettempdir()
+
+DMOJ_CONTEST_PERF_CEILING_INCREMENT = 400
+
+DMOJ_PDF_PDFOID_URL = None
+# Optional but recommended to save resources, path on disk to cache PDFs
+DMOJ_PDF_PROBLEM_CACHE = None
+# Optional, URL serving DMOJ_PDF_PROBLEM_CACHE with X-Accel-Redirect
+DMOJ_PDF_PROBLEM_INTERNAL = None
+
+DMOJ_STATS_LANGUAGE_THRESHOLD = 10
 DMOJ_STATS_SUBMISSION_RESULT_COLORS = {
     'TLE': '#a3bcbd',
     'AC': '#00a92a',
@@ -98,8 +110,30 @@ DMOJ_STATS_SUBMISSION_RESULT_COLORS = {
 }
 DMOJ_API_PAGE_SIZE = 1000
 
-DMOJ_PASSWORD_RESET_LIMIT_WINDOW = 3600
+# Number of password resets per window (in minutes)
+DMOJ_PASSWORD_RESET_LIMIT_WINDOW = 60
 DMOJ_PASSWORD_RESET_LIMIT_COUNT = 10
+
+# Number of email change requests per window (in minutes)
+DMOJ_EMAIL_CHANGE_LIMIT_WINDOW = 60
+DMOJ_EMAIL_CHANGE_LIMIT_COUNT = 10
+# Number of minutes before an email change request activation key expires
+DMOJ_EMAIL_CHANGE_EXPIRY_MINUTES = 60
+
+# At the bare minimum, dark and light theme CSS file locations must be declared
+DMOJ_THEME_CSS = {
+    'light': 'style.css',
+    'dark': 'dark/style.css',
+}
+# At the bare minimum, dark and light ace themes must be declared
+DMOJ_THEME_DEFAULT_ACE_THEME = {
+    'light': 'github',
+    'dark': 'twilight',
+}
+DMOJ_SELECT2_THEME = 'dmoj'
+
+DMOJ_ENABLE_COMMENTS = True
+DMOJ_ENABLE_SOCIAL = True
 
 MARKDOWN_STYLES = {}
 MARKDOWN_DEFAULT_STYLE = {}
@@ -122,28 +156,10 @@ BAD_MAIL_PROVIDERS = ()
 BAD_MAIL_PROVIDER_REGEX = ()
 NOFOLLOW_EXCLUDED = set()
 
-TIMEZONE_BG = None
-TIMEZONE_MAP = None
+TIMEZONE_MAP = 'https://static.dmoj.ca/assets/earth.jpg'
 
 TERMS_OF_SERVICE_URL = None
 DEFAULT_USER_LANGUAGE = 'PY3'
-
-PHANTOMJS = ''
-PHANTOMJS_PDF_ZOOM = 0.75
-PHANTOMJS_PDF_TIMEOUT = 5.0
-PHANTOMJS_PAPER_SIZE = 'Letter'
-
-SLIMERJS = ''
-SLIMERJS_PDF_ZOOM = 0.75
-SLIMERJS_FIREFOX_PATH = ''
-SLIMERJS_PAPER_SIZE = 'Letter'
-
-PUPPETEER_MODULE = '/usr/lib/node_modules/puppeteer'
-PUPPETEER_PAPER_SIZE = 'Letter'
-
-USE_SELENIUM = False
-SELENIUM_CUSTOM_CHROME_PATH = None
-SELENIUM_CHROMEDRIVER_PATH = 'chromedriver'
 
 INLINE_JQUERY = True
 INLINE_FONTAWESOME = True
@@ -259,7 +275,6 @@ INSTALLED_APPS += (
     'social_django',
     'compressor',
     'django_ace',
-    'pagedown',
     'sortedm2m',
     'statici18n',
     'impersonate',
@@ -276,6 +291,7 @@ MIDDLEWARE = (
     'judge.middleware.APIMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'judge.middleware.MiscConfigMiddleware',
     'judge.middleware.DMOJLoginMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -337,6 +353,7 @@ TEMPLATES = [
                 'judge.template_context.general_info',
                 'judge.template_context.site',
                 'judge.template_context.site_name',
+                'judge.template_context.site_theme',
                 'judge.template_context.misc_config',
                 'judge.template_context.math_setting',
                 'social_django.context_processors.backends',
@@ -386,6 +403,7 @@ LANGUAGES = [
     ('hr', _('Croatian')),
     ('hu', _('Hungarian')),
     ('ja', _('Japanese')),
+    ('kk', _('Kazakh')),
     ('ko', _('Korean')),
     ('pt', _('Brazilian Portuguese')),
     ('ro', _('Romanian')),
@@ -411,7 +429,7 @@ BLEACH_USER_SAFE_TAGS = [
 
 BLEACH_USER_SAFE_ATTRS = {
     '*': ['id', 'class', 'style'],
-    'img': ['src', 'alt', 'title', 'width', 'height', 'data-src'],
+    'img': ['src', 'alt', 'title', 'width', 'height', 'data-src', 'align'],
     'a': ['href', 'alt', 'title'],
     'abbr': ['title'],
     'dfn': ['title'],
@@ -422,6 +440,7 @@ BLEACH_USER_SAFE_ATTRS = {
     'audio': ['autoplay', 'controls', 'crossorigin', 'muted', 'loop', 'preload', 'src'],
     'video': ['autoplay', 'controls', 'crossorigin', 'height', 'muted', 'loop', 'poster', 'preload', 'src', 'width'],
     'source': ['src', 'srcset', 'type'],
+    'li': ['value'],
 }
 
 MARKDOWN_STAFF_EDITABLE_STYLE = {
@@ -479,9 +498,7 @@ MARKDOWN_STYLES = {
 MARTOR_ENABLE_CONFIGS = {
     'imgur': 'true',
     'mention': 'true',
-    'jquery': 'false',
     'living': 'false',
-    'spellcheck': 'false',
     'hljs': 'false',
 }
 MARTOR_MARKDOWNIFY_URL = '/widgets/preview/default'
@@ -494,7 +511,7 @@ MARTOR_UPLOAD_MEDIA_DIR = 'martor'
 MARTOR_UPLOAD_SAFE_EXTS = {'.jpg', '.png', '.gif'}
 
 # Database
-# https://docs.djangoproject.com/en/3.2/ref/settings/#databases
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     'default': {
@@ -521,21 +538,20 @@ EVENT_DAEMON_AMQP_EXCHANGE = 'dmoj-events'
 EVENT_DAEMON_SUBMISSION_KEY = '6Sdmkx^%pk@GsifDfXcwX*Y7LRF%RGT8vmFpSxFBT$fwS7trc8raWfN#CSfQuKApx&$B#Gh2L7p%W!Ww'
 
 # Internationalization
-# https://docs.djangoproject.com/en/3.2/topics/i18n/
+# https://docs.djangoproject.com/en/4.2/topics/i18n/
 
 # Whatever you do, this better be one of the entries in `LANGUAGES`.
 LANGUAGE_CODE = 'en'
 TIME_ZONE = 'UTC'
 DEFAULT_USER_TIME_ZONE = 'America/Toronto'
 USE_I18N = True
-USE_L10N = True
 USE_TZ = True
 
 # Cookies
 SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/3.2/howto/static-files/
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 DMOJ_RESOURCES = os.path.join(BASE_DIR, 'resources')
 STATICFILES_FINDERS = (
@@ -546,7 +562,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'resources'),
 ]
 STATIC_URL = '/static/'
-
+STATIC_ROOT = '/home/sukhraj/site/staticfiles'
 # Define a cache
 CACHES = {}
 
@@ -557,6 +573,8 @@ AUTHENTICATION_BACKENDS = (
     'judge.social_auth.GitHubSecureEmailOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
+
+REGISTRATION_OPEN = True
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
@@ -586,11 +604,24 @@ CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 WEBAUTHN_RP_ID = None
 
 try:
-    with open(os.path.join(os.path.dirname(__file__), 'local_settings.py')) as f:
-        exec(f.read(), globals())
+    with open(os.path.join(os.path.dirname(__file__), 'local_settings.py')) as F:
+        exec(F.read(), globals())
 except IOError:
     pass
 
 
 # Check settings are consistent
 assert DMOJ_PROBLEM_MIN_USER_POINTS_VOTE >= DMOJ_PROBLEM_MIN_PROBLEM_POINTS
+
+# <= 1 minute expiry is unusable UX
+assert DMOJ_EMAIL_CHANGE_EXPIRY_MINUTES > 1
+
+if DMOJ_PDF_PDFOID_URL:
+    # If a cache is configured, it must already exist and be a directory
+    assert DMOJ_PDF_PROBLEM_CACHE is None or os.path.isdir(DMOJ_PDF_PROBLEM_CACHE)
+    # If using X-Accel-Redirect, the cache directory must be configured
+    assert DMOJ_PDF_PROBLEM_INTERNAL is None or DMOJ_PDF_PROBLEM_CACHE is not None
+
+# Compute these values after local_settings.py is loaded
+ACE_DEFAULT_LIGHT_THEME = DMOJ_THEME_DEFAULT_ACE_THEME['light']
+ACE_DEFAULT_DARK_THEME = DMOJ_THEME_DEFAULT_ACE_THEME['dark']

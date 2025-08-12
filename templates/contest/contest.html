@@ -10,10 +10,13 @@
 
 {% block content_js_media %}
     <script type="text/javascript">
-        $(document).ready(function () {
+        // Ensure this script runs after the page is loaded
+        document.addEventListener('DOMContentLoaded', function() {
             $('.time-remaining').each(function () {
                 count_down($(this));
             });
+
+            console.log('Contest page loaded - contest mode handled by global script');
         });
     </script>
     {% include "contest/media-js.html" %}
@@ -27,7 +30,7 @@
 {% block body %}
     <div id="banner">
         <a href="https://www.timeanddate.com/worldclock/fixedtime.html?msg={{ contest.name|urlquote('') }}&amp;iso=
-                {{- contest.start_time|utc|date('Y-m-d\TH:i:s') }}" class="date">
+                {{- (contest.start_time if contest.start_time >= now else contest.end_time)|utc|date('Y-m-d\TH:i:s') }}" class="date">
             {%- if contest.is_in_contest(request.user) and not request.participation.live -%}
                 {% if request.participation.spectate %}
                     {{- _('Spectating, contest ends in %(countdown)s.', countdown=as_countdown(contest.time_before_end)) -}}
@@ -234,18 +237,17 @@
         </div>
     {% endif %}
 
-    <hr>
-    <span class="social">
-        {{ post_to_facebook(request, contest, '<i class="fa fa-facebook-official"></i>') }}
-        {{ post_to_twitter(request, SITE_NAME + ':', contest, '<i class="fa fa-twitter"></i>') }}
-    </span>
+    {% if enable_social %}
+        <hr>
+        <span class="social">
+            {{ post_to_facebook(request, contest, '<i class="fa fa-facebook-official"></i>') }}
+            {{ post_to_twitter(request, SITE_NAME + ':', contest, '<i class="fa fa-twitter"></i>') }}
+        </span>
+    {% endif %}
 
-    {% include "comments/list.html" %}
+    {% if enable_comments %}
+        {% include "comments/list.html" %}
+    {% endif %}
 {% endblock %}
 
 {% block description_end %}{% endblock %}
-
-{% block bodyend %}
-    {{ super() }}
-    {% include "comments/math.html" %}
-{% endblock %}
