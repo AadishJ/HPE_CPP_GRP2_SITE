@@ -13,6 +13,19 @@
             #problem-table th {
                 padding: 0;
             }
+            
+            a.hot-problem-link:hover > .hot-problem-count {
+                visibility: visible;
+            }
+
+            span.hot-problem-count {
+                color: #555;
+                font-size: 0.75em;
+                vertical-align: super;
+                visibility: hidden;
+                padding-left: 0.25em;
+                position: relative;
+            }
         </style>
     {% endif %}
 {% endblock %}
@@ -46,7 +59,8 @@
                 }).css({'visibility': 'visible'}).change(clean_submit);
                 $('#types').select2({
                     theme: '{{ DMOJ_SELECT2_THEME }}',
-                    multiple: 1, placeholder: {{ _('Filter by type...')|htmltojs }}
+                    multiple: 1, 
+                    placeholder: {{ _('Filter by type...')|htmltojs }}
                 }).css({'visibility': 'visible'});
 
                 // This is incredibly nasty to do but it's needed because otherwise the select2 steals the focus
@@ -167,7 +181,7 @@
                             <h3>{{ _('Hot problems') }} <i class="fa fa-fire"></i></h3>
                             <div class="sidebox-content">
                                 <ul class="problem-list">{% for problem in hot_problems %}
-                                    <li><a href="{{ url('problem_detail', problem.code) }}" class="hot-problem-link">
+                                    <li><a href="{{ url('problem_proctor_wrapper', problem.code) }}" class="hot-problem-link">
                                         {{ problem.name }}
                                     </a></li>
                                 {% endfor %}</ul>
@@ -263,7 +277,7 @@
                             {% endif %}
                         {% endif %}
                         <td class="problem">
-                            <a href="{{ url('problem_detail', problem.code) }}">{{ problem.i18n_name or problem.name }}</a>
+                            <a href="{{ url('problem_proctor_wrapper', problem.code) }}">{{ problem.i18n_name or problem.name }}</a>
                         </td>
                         <td class="category">{{ problem.group.full_name }}</td>
                         {% if show_types %}

@@ -196,4 +196,20 @@
             </div>
         {% endif %}
     </form>
+    <script>
+        // If this page is loaded inside an iframe, hide header/footer and notify the parent.
+        if (window.parent !== window) {
+            // Hide header and footer unconditionally when in an iframe.
+            const nav = document.getElementById('navigation');
+            const footer = document.querySelector('footer');
+            if (nav) nav.style.display = 'none';
+            if (footer) footer.style.display = 'none';
+            // Adjust content margin that was there for the header.
+            const content = document.getElementById('content');
+            if(content) content.style.marginTop = '0';
+
+            // Notify the parent wrapper that this page has loaded.
+            window.parent.postMessage({ proctoringPage: 'problem_submit' }, window.location.origin);
+        }
+    </script>
 {% endblock %}

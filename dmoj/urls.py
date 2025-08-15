@@ -8,12 +8,14 @@ from django.urls import include, path, re_path, reverse
 from django.utils.functional import lazy
 from django.utils.translation import gettext_lazy as _
 from django.views.generic import RedirectView
+from django.views.decorators.clickjacking import xframe_options_exempt
+from martor.views import markdown_search_user
 
-#ADDITIONS
+# ADDITIONS
 from judge.views.trial_script import download_problem_submissions
 from judge.views.trial_script import show_similarity_table
 
-#ADDITIONS END
+# ADDITIONS END
 
 
 from judge.feed import AtomBlogFeed, AtomCommentFeed, AtomProblemFeed, BlogFeed, CommentFeed, ProblemFeed
@@ -112,14 +114,15 @@ urlpatterns = [
     path('problems/random/', problem.RandomProblem.as_view(), name='problem_random'),
 
     path('problem/<str:problem>', include([
-        path('', problem.ProblemDetail.as_view(), name='problem_detail'),
+        path('', xframe_options_exempt(problem.ProblemDetail.as_view()), name='problem_detail'),
         path('/editorial', problem.ProblemSolution.as_view(), name='problem_editorial'),
         path('/pdf', problem.ProblemPdfView.as_view(), name='problem_pdf'),
         path('/pdf/<slug:language>', problem.ProblemPdfView.as_view(), name='problem_pdf'),
         path('/clone', problem.ProblemClone.as_view(), name='problem_clone'),
-        path('/submit', problem.ProblemSubmit.as_view(), name='problem_submit'),
-        path('/resubmit/<int:submission>', problem.ProblemSubmit.as_view(), name='problem_submit'),
+        path('/submit', xframe_options_exempt(problem.ProblemSubmit.as_view()), name='problem_submit'),
+        path('/resubmit/<int:submission>', xframe_options_exempt(problem.ProblemSubmit.as_view()), name='problem_submit'),
 
+        path('/proctor/', problem.ProctoringWrapperView.as_view(), name='problem_proctor_wrapper'),
         path('/rank/', paged_list_view(ranked_submission.RankedSubmissions, 'ranked_submissions')),
         path('/submissions/', paged_list_view(submission.ProblemSubmissions, 'chronological_submissions')),
         path('/submissions/<str:user>/', paged_list_view(submission.UserProblemSubmissions, 'user_submissions')),
@@ -159,7 +162,7 @@ urlpatterns = [
     path('src/<int:submission>/raw', submission.SubmissionSourceRaw.as_view(), name='submission_source_raw'),
 
     path('submission/<int:submission>', include([
-        path('', submission.SubmissionStatus.as_view(), name='submission_status'),
+        path('', xframe_options_exempt(submission.SubmissionStatus.as_view()), name='submission_status'),
         path('/abort', submission.abort_submission, name='submission_abort'),
     ])),
 
