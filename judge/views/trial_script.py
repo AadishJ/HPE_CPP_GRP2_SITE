@@ -31,35 +31,35 @@ DOLOS_LANGUAGE_FLAGS = {
 
 def extract_username(filename):
    
-    name = filename.rsplit('.', 1)[0]  # Remove extension
+    name = filename.rsplit('.', 1)[0]  
     parts = name.split('_')
     if len(parts) >= 2 and parts[-1].isdigit():
-        return '_'.join(parts[:-1])  # Remove submission ID
-    return name  # fallback (e.g. no underscore or submission ID)
+        return '_'.join(parts[:-1])  
+    return name  
 
 
-#form the CSV file, reads the similarity score
+
 def extract_similarity_data(report_csv_paths,contest_key):
-    similarity_data = defaultdict(lambda: defaultdict(float))  # username -> problem_code -> max_similarity
+    similarity_data = defaultdict(lambda: defaultdict(float))  
 
     for path in report_csv_paths:
         if not os.path.exists(path):
             print(f"[!] Missing Dolos output: {path}")
 
-        # Extract problem code from directory name instead of filename
-        parent_dir = os.path.basename(os.path.dirname(path))  # e.g. dolos-report-*-twosumPython3submissions
-        problem_code = parent_dir.split('-')[-1]  # Extracts 'twosumPython3submissions'
         
-        # Optional cleanup: remove 'submissions' suffix
+        parent_dir = os.path.basename(os.path.dirname(path))  
+        problem_code = parent_dir.split('-')[-1]  
+        
+        
         if problem_code.endswith('submissions'):
-            problem_code = problem_code[:-11]  # now just 'twosumPython3' so removed the word 
+            problem_code = problem_code[:-11]  
 
 
         with open(path, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                file1 = os.path.basename(row['leftFilePath'])   # e.g. personal_sukhraj_45.py
-                file2 = os.path.basename(row['rightFilePath'])  # e.g. sukhraj_47.py
+                file1 = os.path.basename(row['leftFilePath'])   
+                file2 = os.path.basename(row['rightFilePath'])  
                 similarity = float(row['similarity'])
                 user1 = extract_username(file1)
                 user2 = extract_username(file2)
@@ -68,7 +68,7 @@ def extract_similarity_data(report_csv_paths,contest_key):
                 similarity_data[user2][problem_code] = max(similarity_data[user2][problem_code], similarity)
 
     
-    #storing in a database
+    
     for username, problems in similarity_data.items():
         for problem_code, score in problems.items():
             contest = Contest.objects.get(key=contest_key)
@@ -100,12 +100,12 @@ def find_free_port(start_port=3001, max_port=3100, used_ports=set()):
                 return port
     raise RuntimeError("No free port found in range.")
 
-    # ///////////////////////////////////
+    
 
 def download_problem_submissions(request, contest_key):
     contest = Contest.objects.get(key=contest_key)
     problems = contest.problems.all()
-    base_dir = "/home/sukhraj/submissions"  # or any path you want
+    base_dir = "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/submissions"
     os.makedirs(base_dir, exist_ok=True)
     tmp_dir = os.path.join(base_dir, f"contest_{contest_key}_{timestamp}")
     os.makedirs(tmp_dir, exist_ok=True)
@@ -209,10 +209,10 @@ def download_problem_submissions(request, contest_key):
 
     finally:
         print("[✓] Finished preparing submissions and running Dolos.")
-#<<<<<<< HEAD
 
 
-#CREATING THE TABLE TO BE DISPLAYED
+
+
 
 
 def read_similarity_matrix(contest_key):
@@ -227,16 +227,16 @@ def read_similarity_matrix(contest_key):
 
     users = sorted(set(s.user.username for s in scores))
 
-    # Strip language suffixes from problem_code
+    
     def normalize_problem_code(code):
         for lang in ['C', 'C++', 'C++11', 'Python 2', 'Python 3', 'Java', 'Rust', 'Go',
                      'Kotlin', 'Pascal', 'Ruby', 'Haskell', 'Perl', 'Scala', 'JavaScript']:
-            suffix = lang.replace(' ', '')  # e.g., 'Python3'
+            suffix = lang.replace(' ', '')  
             if code.endswith(suffix):
                 return code[:-len(suffix)]
         return code
 
-    normalized_scores = defaultdict(dict)  # normalized_problem -> user -> score
+    normalized_scores = defaultdict(dict)  
 
     for score in scores:
         user = score.user.username
@@ -244,7 +244,7 @@ def read_similarity_matrix(contest_key):
         if user not in normalized_scores[problem]:
             normalized_scores[problem][user] = score.similarity_percent
         else:
-            # Take the max score if multiple entries for same problem (e.g., Python3 and C++)
+            
             normalized_scores[problem][user] = max(
                 normalized_scores[problem][user], score.similarity_percent
             )
@@ -263,7 +263,7 @@ def read_similarity_matrix(contest_key):
     return headers, rows
 
 
-#NOW SHOW THE TABLE
+
 
 def show_similarity_table(request, contest_key):
     headers, rows = read_similarity_matrix(contest_key)

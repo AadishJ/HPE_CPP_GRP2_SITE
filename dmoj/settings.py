@@ -27,7 +27,7 @@ SECRET_KEY = '5*9f5q57mqmlz2#f$x1h76&jxy#yortjl1v+l*6hd18$d*yx#0'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-#ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '172.24.12.193']
+# ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '172.24.12.193']
 
 
 SITE_ID = 1
@@ -562,7 +562,7 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'resources'),
 ]
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/sukhraj/site/staticfiles'
+STATIC_ROOT = "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/staticfiles"
 # Define a cache
 CACHES = {}
 
@@ -624,4 +624,4 @@ if DMOJ_PDF_PDFOID_URL:
 
 # Compute these values after local_settings.py is loaded
 ACE_DEFAULT_LIGHT_THEME = DMOJ_THEME_DEFAULT_ACE_THEME['light']
-ACE_DEFAULT_DARK_THEME = DMOJ_THEME_DEFAULT_ACE_THEME['dark']
+ACE_DEFAULT_DARK_THEME = DMOJ_THEME_DEFAULT_ACE_THEME['light']

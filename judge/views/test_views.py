@@ -8,7 +8,7 @@ from django.shortcuts import render
 def dolos_check_view(request):
     if request.method == 'POST':
         try:
-            zip_file_path = '/home/sukhraj/dolos/test_submissions.zip'  # Your existing ZIP
+            zip_file_path = '/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/dolos/test_submissions.zip'  # Your existing ZIP
 
             with open(zip_file_path, 'rb') as f:
                 res = requests.post(

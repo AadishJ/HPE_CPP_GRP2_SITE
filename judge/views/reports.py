@@ -81,7 +81,7 @@ def find_free_port(start_port=3001, max_port=3100, used_ports=set()):
 
 
 def run_dolos_and_generate_zip(contest_key, problem_code):
-    base_dir = "/home/sukhraj/submissions"
+    base_dir = "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/submissions"
     os.makedirs(base_dir, exist_ok=True)
 
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
