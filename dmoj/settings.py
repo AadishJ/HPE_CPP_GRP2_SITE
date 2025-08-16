@@ -60,7 +60,7 @@ DMOJ_CAMO_KEY = None
 DMOJ_CAMO_HTTPS = False
 DMOJ_CAMO_EXCLUDE = ()
 
-DMOJ_PROBLEM_DATA_ROOT = "/mnt/problems"
+DMOJ_PROBLEM_DATA_ROOT = "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems"
 
 DMOJ_PROBLEM_MIN_TIME_LIMIT = 0  # seconds
 DMOJ_PROBLEM_MAX_TIME_LIMIT = 60  # seconds
@@ -740,3 +740,4 @@ ACE_DEFAULT_LIGHT_THEME = DMOJ_THEME_DEFAULT_ACE_THEME["light"]
 ACE_DEFAULT_DARK_THEME = DMOJ_THEME_DEFAULT_ACE_THEME[
     "dark"
 ]  # Fixed: should be 'dark', not 'light'
+ 

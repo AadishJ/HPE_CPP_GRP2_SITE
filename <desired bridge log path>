@@ -605,3 +605,275 @@ INFO 2025-08-08 18:35:57,335 judge_list Minimum tier changed from None to 1
 INFO 2025-08-09 05:10:28,828 judge_handler Judge connected from: ('172.17.0.2', 42004)
 INFO 2025-08-09 05:10:28,837 judge_handler Judge authenticated: ('172.17.0.2', 42004) (test_judge_1)
 INFO 2025-08-09 05:10:28,838 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:01:49,341 daemon Exiting due to SIGINT
+INFO 2025-08-16 05:03:00,605 daemon Exiting due to SIGINT
+INFO 2025-08-16 05:03:20,313 judge_handler Judge connected from: ('127.0.0.1', 48758)
+INFO 2025-08-16 05:03:20,317 judge_handler Judge authenticated: ('127.0.0.1', 48758) (judge)
+INFO 2025-08-16 05:03:20,317 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:11:40,640 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 05:11:40,644 judge_handler Judge disconnected from: ('127.0.0.1', 48758) with name judge
+INFO 2025-08-16 05:11:42,630 judge_handler Judge connected from: ('127.0.0.1', 40332)
+INFO 2025-08-16 05:11:42,634 judge_handler Judge authenticated: ('127.0.0.1', 40332) (judge)
+INFO 2025-08-16 05:11:42,634 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:13:21,162 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 05:13:21,167 judge_handler Judge disconnected from: ('127.0.0.1', 40332) with name judge
+INFO 2025-08-16 05:13:22,717 judge_handler Judge connected from: ('127.0.0.1', 34008)
+INFO 2025-08-16 05:13:22,720 judge_handler Judge authenticated: ('127.0.0.1', 34008) (judge)
+INFO 2025-08-16 05:13:22,721 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:14:38,502 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 05:14:38,506 judge_handler Judge disconnected from: ('127.0.0.1', 34008) with name judge
+INFO 2025-08-16 05:14:43,486 judge_handler Judge connected from: ('127.0.0.1', 50812)
+INFO 2025-08-16 05:14:43,489 judge_handler Judge authenticated: ('127.0.0.1', 50812) (judge)
+INFO 2025-08-16 05:14:43,490 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:15:08,052 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 05:15:08,055 judge_handler Judge disconnected from: ('127.0.0.1', 50812) with name judge
+INFO 2025-08-16 05:15:09,674 judge_handler Judge connected from: ('127.0.0.1', 46944)
+INFO 2025-08-16 05:15:09,684 judge_handler Judge authenticated: ('127.0.0.1', 46944) (judge)
+INFO 2025-08-16 05:15:09,685 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:31:29,337 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 05:31:29,350 judge_handler Judge disconnected from: ('127.0.0.1', 46944) with name judge
+INFO 2025-08-16 05:31:31,097 daemon Exiting due to SIGINT
+INFO 2025-08-16 05:31:50,256 judge_handler Judge connected from: ('127.0.0.1', 52132)
+INFO 2025-08-16 05:31:50,263 judge_handler Judge authenticated: ('127.0.0.1', 52132) (judge)
+INFO 2025-08-16 05:31:50,264 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 05:36:03,655 judge_handler judge: Updated problem list
+INFO 2025-08-16 05:36:03,661 judge_handler judge: Updated problem list
+INFO 2025-08-16 06:19:56,714 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:06,914 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:07,267 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:07,514 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:07,715 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:07,901 daemon Exiting due to SIGINT
+INFO 2025-08-16 06:20:10,730 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 06:20:10,734 judge_handler Judge disconnected from: ('127.0.0.1', 52132) with name judge
+INFO 2025-08-16 06:20:38,531 judge_handler Judge connected from: ('127.0.0.1', 59906)
+INFO 2025-08-16 06:20:38,533 judge_handler Judge authenticated: ('127.0.0.1', 59906) (judge)
+INFO 2025-08-16 06:20:38,534 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 06:31:30,694 judge_handler Judge connected from: ('127.0.0.1', 45882)
+INFO 2025-08-16 06:31:30,697 judge_handler Judge authenticated: ('127.0.0.1', 45882) (judge)
+INFO 2025-08-16 06:31:30,698 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 06:37:06,294 judge_list Minimum tier changed from 1 to None
+INFO 2025-08-16 06:37:06,304 judge_handler Judge disconnected from: ('127.0.0.1', 45882) with name judge
+INFO 2025-08-16 06:37:13,662 judge_handler Judge connected from: ('127.0.0.1', 35656)
+INFO 2025-08-16 06:37:13,665 judge_handler Judge authenticated: ('127.0.0.1', 35656) (judge)
+INFO 2025-08-16 06:37:13,666 judge_list Minimum tier changed from None to 1
+INFO 2025-08-16 06:55:37,547 judge_list Free judges: 1
+INFO 2025-08-16 06:55:37,554 judge_list Dispatched submission 1 to: judge
+INFO 2025-08-16 06:55:37,559 judge_handler Submission acknowledged: 1
+INFO 2025-08-16 06:55:37,669 judge_handler judge: Submission generated compiler messages: 1
+INFO 2025-08-16 06:55:37,672 judge_handler judge: Grading has begun on: 1
+ERROR 2025-08-16 06:55:37,675 judge_handler Judge judge failed while handling submission 1
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/judge/bridge/judge_handler.py", line 462, in on_internal_error
+    raise ValueError('\n\n' + packet['message'])
+ValueError: 
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 271, in open
+    return open(os.path.join(self.problem_root_dir, key), 'rb')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb/1.in'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 415, in _worker_process_main
+    ipc_msg = next(case_gen)
+              ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 506, in _grade_cases
+    result = self.grader.grade(case)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/graders/standard.py", line 21, in grade
+    input_file = case.input_data_io()
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 463, in input_data_io
+    result = self._input_data_io = self._make_input_data_io()
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 480, in _make_input_data_io
+    return self.problem.problem_data.as_fd(self.config['in'], normalize=not self.has_binary_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 280, in as_fd
+    with self.open(key) as f:
+         ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 276, in open
+    raise KeyError('file "%s" could not be found in "%s"' % (key, self.problem_root_dir))
+KeyError: 'file "1.in" could not be found in "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb"'
+
+INFO 2025-08-16 06:55:37,727 judge_list Judge available after grading 1: judge
+INFO 2025-08-16 07:03:00,579 judge_list Specified judge judge is available
+INFO 2025-08-16 07:03:00,586 judge_list Dispatched submission 2 to: judge
+INFO 2025-08-16 07:03:00,590 judge_handler Submission acknowledged: 2
+INFO 2025-08-16 07:03:00,725 judge_handler judge: Submission generated compiler messages: 2
+INFO 2025-08-16 07:03:00,727 judge_handler judge: Grading has begun on: 2
+ERROR 2025-08-16 07:03:00,731 judge_handler Judge judge failed while handling submission 2
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/judge/bridge/judge_handler.py", line 462, in on_internal_error
+    raise ValueError('\n\n' + packet['message'])
+ValueError: 
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 271, in open
+    return open(os.path.join(self.problem_root_dir, key), 'rb')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb/1.in'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 415, in _worker_process_main
+    ipc_msg = next(case_gen)
+              ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 506, in _grade_cases
+    result = self.grader.grade(case)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/graders/standard.py", line 21, in grade
+    input_file = case.input_data_io()
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 463, in input_data_io
+    result = self._input_data_io = self._make_input_data_io()
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 480, in _make_input_data_io
+    return self.problem.problem_data.as_fd(self.config['in'], normalize=not self.has_binary_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 280, in as_fd
+    with self.open(key) as f:
+         ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 276, in open
+    raise KeyError('file "%s" could not be found in "%s"' % (key, self.problem_root_dir))
+KeyError: 'file "1.in" could not be found in "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb"'
+
+INFO 2025-08-16 07:03:00,748 judge_list Judge available after grading 2: judge
+INFO 2025-08-16 07:11:27,748 judge_list Free judges: 1
+INFO 2025-08-16 07:11:27,749 judge_list Dispatched submission 3 to: judge
+INFO 2025-08-16 07:11:27,753 judge_handler Submission acknowledged: 3
+INFO 2025-08-16 07:11:28,000 judge_handler judge: Submission generated compiler messages: 3
+INFO 2025-08-16 07:11:28,003 judge_handler judge: Grading has begun on: 3
+ERROR 2025-08-16 07:11:28,005 judge_handler Judge judge failed while handling submission 3
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/judge/bridge/judge_handler.py", line 462, in on_internal_error
+    raise ValueError('\n\n' + packet['message'])
+ValueError: 
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 271, in open
+    return open(os.path.join(self.problem_root_dir, key), 'rb')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb/1.in'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 415, in _worker_process_main
+    ipc_msg = next(case_gen)
+              ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 506, in _grade_cases
+    result = self.grader.grade(case)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/graders/standard.py", line 21, in grade
+    input_file = case.input_data_io()
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 463, in input_data_io
+    result = self._input_data_io = self._make_input_data_io()
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 480, in _make_input_data_io
+    return self.problem.problem_data.as_fd(self.config['in'], normalize=not self.has_binary_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 280, in as_fd
+    with self.open(key) as f:
+         ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 276, in open
+    raise KeyError('file "%s" could not be found in "%s"' % (key, self.problem_root_dir))
+KeyError: 'file "1.in" could not be found in "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb"'
+
+INFO 2025-08-16 07:11:28,016 judge_list Judge available after grading 3: judge
+INFO 2025-08-16 07:13:31,302 judge_list Free judges: 1
+INFO 2025-08-16 07:13:31,303 judge_list Dispatched submission 4 to: judge
+INFO 2025-08-16 07:13:31,307 judge_handler Submission acknowledged: 4
+INFO 2025-08-16 07:13:31,470 judge_handler judge: Submission failed to compile: 4
+INFO 2025-08-16 07:13:31,470 judge_list Judge available after grading 4: judge
+INFO 2025-08-16 07:14:47,965 judge_list Free judges: 1
+INFO 2025-08-16 07:14:47,965 judge_list Dispatched submission 5 to: judge
+INFO 2025-08-16 07:14:47,969 judge_handler Submission acknowledged: 5
+INFO 2025-08-16 07:14:48,136 judge_handler judge: Submission generated compiler messages: 5
+INFO 2025-08-16 07:14:48,141 judge_handler judge: Grading has begun on: 5
+INFO 2025-08-16 07:14:48,161 judge_handler judge: 2 test case(s) completed on: 5
+INFO 2025-08-16 07:14:48,166 judge_handler judge: Grading has ended on: 5
+INFO 2025-08-16 07:14:48,166 judge_list Judge available after grading 5: judge
+INFO 2025-08-16 07:15:36,871 judge_list Free judges: 1
+INFO 2025-08-16 07:15:36,871 judge_list Dispatched submission 6 to: judge
+INFO 2025-08-16 07:15:36,875 judge_handler Submission acknowledged: 6
+INFO 2025-08-16 07:15:37,024 judge_handler judge: Submission generated compiler messages: 6
+INFO 2025-08-16 07:15:37,026 judge_handler judge: Grading has begun on: 6
+INFO 2025-08-16 07:15:37,049 judge_handler judge: 2 test case(s) completed on: 6
+INFO 2025-08-16 07:15:37,055 judge_handler judge: Grading has ended on: 6
+INFO 2025-08-16 07:15:37,056 judge_list Judge available after grading 6: judge
+INFO 2025-08-16 07:16:09,632 judge_list Free judges: 1
+INFO 2025-08-16 07:16:09,633 judge_list Dispatched submission 7 to: judge
+INFO 2025-08-16 07:16:09,637 judge_handler Submission acknowledged: 7
+INFO 2025-08-16 07:16:09,799 judge_handler judge: Submission generated compiler messages: 7
+INFO 2025-08-16 07:16:09,801 judge_handler judge: Grading has begun on: 7
+ERROR 2025-08-16 07:16:09,805 judge_handler Judge judge failed while handling submission 7
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/judge/bridge/judge_handler.py", line 462, in on_internal_error
+    raise ValueError('\n\n' + packet['message'])
+ValueError: 
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 271, in open
+    return open(os.path.join(self.problem_root_dir, key), 'rb')
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb/1.in'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 415, in _worker_process_main
+    ipc_msg = next(case_gen)
+              ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/judge.py", line 506, in _grade_cases
+    result = self.grader.grade(case)
+             ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/graders/standard.py", line 21, in grade
+    input_file = case.input_data_io()
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 463, in input_data_io
+    result = self._input_data_io = self._make_input_data_io()
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 480, in _make_input_data_io
+    return self.problem.problem_data.as_fd(self.config['in'], normalize=not self.has_binary_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 280, in as_fd
+    with self.open(key) as f:
+         ^^^^^^^^^^^^^^
+  File "/mnt/main/Aadi/Coding/College/CPP/Fresh/dmojsite/lib/python3.12/site-packages/dmoj/problem.py", line 276, in open
+    raise KeyError('file "%s" could not be found in "%s"' % (key, self.problem_root_dir))
+KeyError: 'file "1.in" could not be found in "/mnt/main/Aadi/Coding/College/CPP/Fresh/HPE_CPP_GRP2_SITE/problems/aplusb"'
+
+INFO 2025-08-16 07:16:09,817 judge_list Judge available after grading 7: judge
+INFO 2025-08-16 07:19:12,305 judge_list Free judges: 1
+INFO 2025-08-16 07:19:12,311 judge_list Dispatched submission 8 to: judge
+INFO 2025-08-16 07:19:12,315 judge_handler Submission acknowledged: 8
+INFO 2025-08-16 07:19:12,483 judge_handler judge: Submission generated compiler messages: 8
+INFO 2025-08-16 07:19:12,485 judge_handler judge: Grading has begun on: 8
+INFO 2025-08-16 07:19:12,506 judge_handler judge: 2 test case(s) completed on: 8
+INFO 2025-08-16 07:19:12,510 judge_handler judge: Grading has ended on: 8
+INFO 2025-08-16 07:19:12,511 judge_list Judge available after grading 8: judge
+INFO 2025-08-16 07:20:16,457 judge_list Specified judge judge is available
+INFO 2025-08-16 07:20:16,457 judge_list Dispatched submission 9 to: judge
+INFO 2025-08-16 07:20:16,461 judge_handler Submission acknowledged: 9
+INFO 2025-08-16 07:20:16,608 judge_handler judge: Submission generated compiler messages: 9
+INFO 2025-08-16 07:20:16,610 judge_handler judge: Grading has begun on: 9
+INFO 2025-08-16 07:20:16,633 judge_handler judge: 2 test case(s) completed on: 9
+INFO 2025-08-16 07:20:16,640 judge_handler judge: Grading has ended on: 9
+INFO 2025-08-16 07:20:16,642 judge_list Judge available after grading 9: judge
+INFO 2025-08-16 07:21:38,406 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,409 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,412 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,415 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,421 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,423 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,428 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:38,431 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:46,258 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:46,261 judge_handler judge: Updated problem list
+INFO 2025-08-16 07:21:48,098 judge_handler judge: Updated problem list

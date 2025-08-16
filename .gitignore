@@ -17,3 +17,5 @@ resources/style.css
 resources/vars.scss
 sass_processed
 staticfiles
+submissions
+problems
